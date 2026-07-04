@@ -1,0 +1,6 @@
+{
+    "detail": "destination: El destino debe ser un c\u00f3digo IATA de 3 letras (ej. NRT)",
+    "instance": "/api/search",
+    "status": 400,
+    "title": "Bad Request"
+}

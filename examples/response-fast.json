@@ -1,0 +1,47 @@
+[
+    {
+        "airline": "Ryanair",
+        "price": 326.0,
+        "currency": "EUR",
+        "stops": 1,
+        "departDate": "2026-09-14",
+        "returnDate": "2026-09-28",
+        "bookingUrl": "https://example.com/booking?from=BCN&to=NRT&out=2026-09-14&in=2026-09-28&airline=Ryanair"
+    },
+    {
+        "airline": "Iberia",
+        "price": 330.0,
+        "currency": "EUR",
+        "stops": 1,
+        "departDate": "2026-07-13",
+        "returnDate": "2026-07-27",
+        "bookingUrl": "https://example.com/booking?from=BCN&to=NRT&out=2026-07-13&in=2026-07-27&airline=Iberia"
+    },
+    {
+        "airline": "Lufthansa",
+        "price": 330.0,
+        "currency": "EUR",
+        "stops": 1,
+        "departDate": "2026-07-28",
+        "returnDate": "2026-08-14",
+        "bookingUrl": "https://example.com/booking?from=BCN&to=NRT&out=2026-07-28&in=2026-08-14&airline=Lufthansa"
+    },
+    {
+        "airline": "Ryanair",
+        "price": 331.0,
+        "currency": "EUR",
+        "stops": 1,
+        "departDate": "2026-09-14",
+        "returnDate": "2026-09-29",
+        "bookingUrl": "https://example.com/booking?from=BCN&to=NRT&out=2026-09-14&in=2026-09-29&airline=Ryanair"
+    },
+    {
+        "airline": "Ryanair",
+        "price": 337.0,
+        "currency": "EUR",
+        "stops": 1,
+        "departDate": "2026-07-07",
+        "returnDate": "2026-07-24",
+        "bookingUrl": "https://example.com/booking?from=BCN&to=NRT&out=2026-07-07&in=2026-07-24&airline=Ryanair"
+    }
+]

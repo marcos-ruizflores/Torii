@@ -1,0 +1,11 @@
+{
+  "origin": "BCN",
+  "destination": "NRT",
+  "rangeStart": "2026-07-01",
+  "rangeEnd": "2026-09-30",
+  "baseDuration": 14,
+  "variability": 3,
+  "maxStops": 1,
+  "topN": 5,
+  "precision": "FAST"
+}
