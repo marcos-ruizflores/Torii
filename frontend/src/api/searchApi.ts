@@ -1,9 +1,11 @@
 import axios from 'axios'
 import type { FlightOffer, ProblemDetail, SearchRequest } from './types'
 
-// Cliente HTTP. baseURL vacío: las rutas "/api/..." salen al mismo origen, que en
-// desarrollo el proxy de Vite redirige al backend (ver vite.config.ts).
-const http = axios.create()
+// Cliente HTTP. La URL del backend llega por VITE_API_URL (definida al hacer el
+// build para producción, donde frontend y API viven en orígenes distintos). Si no
+// está definida, baseURL queda vacío: las rutas "/api/..." salen al mismo origen,
+// que en desarrollo el proxy de Vite redirige al backend (ver vite.config.ts).
+const http = axios.create({ baseURL: import.meta.env.VITE_API_URL ?? '' })
 
 /** Llama a POST /api/search y devuelve las ofertas, o lanza un Error con el mensaje del backend. */
 export async function searchOffers(request: SearchRequest): Promise<FlightOffer[]> {

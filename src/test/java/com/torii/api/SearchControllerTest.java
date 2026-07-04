@@ -16,7 +16,9 @@ import java.util.List;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -114,6 +116,27 @@ class SearchControllerTest {
                         .content(body))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail", containsString("demasiado corto")));
+    }
+
+    // --- CORS (frontend desplegado en otro origen; ver CorsConfig) ---
+
+    @Test
+    void preflightDesdeOrigenPermitidoDevuelveCabecerasCors() throws Exception {
+        // El navegador manda este OPTIONS antes del POST real cuando el frontend
+        // vive en otro origen. Sin la cabecera Allow-Origin, bloquearía la llamada.
+        mvc.perform(options("/api/search")
+                        .header("Origin", "http://localhost:5173")
+                        .header("Access-Control-Request-Method", "POST"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
+    }
+
+    @Test
+    void preflightDesdeOrigenDesconocidoSeRechaza() throws Exception {
+        mvc.perform(options("/api/search")
+                        .header("Origin", "https://malicioso.example.com")
+                        .header("Access-Control-Request-Method", "POST"))
+                .andExpect(status().isForbidden());
     }
 
     @Test
