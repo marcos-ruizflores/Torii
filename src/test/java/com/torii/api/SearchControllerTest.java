@@ -1,10 +1,13 @@
 package com.torii.api;
 
+import com.torii.auth.SecurityConfig;
+import com.torii.config.CorsConfig;
 import com.torii.model.FlightOffer;
 import com.torii.search.SearchService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -30,6 +33,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * ejecutar el algoritmo.
  */
 @WebMvcTest(SearchController.class)
+// La cadena de seguridad real: /api/search es público (con o sin token) y el CORS
+// lo maneja el filtro de Security con el bean de CorsConfig.
+@Import({SecurityConfig.class, CorsConfig.class})
 class SearchControllerTest {
 
     @Autowired
@@ -58,7 +64,7 @@ class SearchControllerTest {
 
     @Test
     void busquedaValidaDevuelve200YElJsonDeOfertas() throws Exception {
-        when(searchService.search(any())).thenReturn(List.of(
+        when(searchService.search(any(), any())).thenReturn(List.of(
                 new FlightOffer("Iberia", new BigDecimal("325.00"), "EUR", 1,
                         LocalDate.of(2026, 7, 29), LocalDate.of(2026, 8, 12),
                         "https://example.com/booking")));

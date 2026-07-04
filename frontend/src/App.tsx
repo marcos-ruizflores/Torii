@@ -1,23 +1,32 @@
 import { useState } from 'react'
-import { AlertCircle, Plane, Zap } from '@untitledui/icons'
+import { useQueryClient } from '@tanstack/react-query'
+import { AlertCircle, LogOut01, Plane, Zap } from '@untitledui/icons'
 import { useNavigate } from 'react-router'
 import { SearchForm } from './components/SearchForm'
 import { ResultsTable } from './components/ResultsTable'
 import { RouteMap } from './components/RouteMap'
 import { PriceHistoryChart } from './components/PriceHistoryChart'
+import { Badge } from '@/components/base/badges/badges'
 import { Button } from '@/components/base/buttons/button'
+import { RecentSearches } from './components/RecentSearches'
+import { useAuth } from './auth/AuthContext'
 import { useSearch } from './hooks/useSearch'
 import type { SearchRequest } from './api/types'
 
 export default function App() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const { user, logout } = useAuth()
   const search = useSearch()
   // Guardamos la ruta de la última búsqueda para el mapa y el histórico de precios.
   const [route, setRoute] = useState<{ origin: string; destination: string } | null>(null)
 
   function handleSearch(req: SearchRequest) {
     setRoute({ origin: req.origin, destination: req.destination })
-    search.mutate(req)
+    search.mutate(req, {
+      // La búsqueda recién hecha debe aparecer en "Mis últimas búsquedas".
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-searches'] }),
+    })
   }
 
   return (
@@ -35,21 +44,39 @@ export default function App() {
               </p>
             </div>
           </div>
-          {/* Navegación de cuenta: solo interfaz hasta que exista la BD de usuarios. */}
           <nav className="flex items-center gap-2">
             <Button color="tertiary" size="sm" iconLeading={Zap} onClick={() => navigate('/planes')}>
               Planes
             </Button>
-            <Button color="secondary" size="sm" onClick={() => navigate('/login')}>
-              Iniciar sesión
-            </Button>
-            <Button color="primary" size="sm" onClick={() => navigate('/signup')}>
-              Crear cuenta
-            </Button>
+            {user ? (
+              <>
+                <span className="text-sm text-secondary">
+                  Hola, <span className="font-semibold text-primary">{user.name}</span>
+                </span>
+                <Badge type="pill-color" color={user.plan === 'FREE' ? 'gray' : 'brand'} size="sm">
+                  {user.plan}
+                </Badge>
+                <Button color="secondary" size="sm" iconLeading={LogOut01} onClick={logout}>
+                  Salir
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button color="secondary" size="sm" onClick={() => navigate('/login')}>
+                  Iniciar sesión
+                </Button>
+                <Button color="primary" size="sm" onClick={() => navigate('/signup')}>
+                  Crear cuenta
+                </Button>
+              </>
+            )}
           </nav>
         </header>
 
         <SearchForm onSearch={handleSearch} loading={search.isPending} />
+
+        {/* Solo con sesión iniciada: las búsquedas anónimas no tienen historial. */}
+        {user && <RecentSearches onRepeat={handleSearch} />}
 
         {route && <RouteMap origin={route.origin} destination={route.destination} />}
 

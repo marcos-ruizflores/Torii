@@ -39,3 +39,33 @@ export interface ProblemDetail {
   detail: string
   instance: string
 }
+
+/** Perfil público del usuario autenticado (lo devuelven login/signup y /api/me). */
+export interface User {
+  id: number
+  name: string
+  email: string
+  plan: 'FREE' | 'PRO' | 'BUSINESS'
+}
+
+/** Respuesta de POST /api/auth/login y /api/auth/signup. */
+export interface AuthResponse {
+  token: string
+  user: User
+}
+
+/** Una búsqueda guardada, de GET /api/me/searches. Permite repetirla con un clic. */
+export interface SavedSearch {
+  id: number
+  origin: string
+  destination: string
+  rangeStart: string
+  rangeEnd: string
+  baseDuration: number
+  variability: number
+  maxStops: number
+  topN: number
+  precision: SearchPrecision
+  maxPrice: number | null
+  createdAt: string
+}

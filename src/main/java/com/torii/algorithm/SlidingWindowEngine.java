@@ -86,6 +86,14 @@ public class SlidingWindowEngine {
                 .toList();
     }
 
+    /**
+     * Cuántas consultas (pares de fechas) hará esta búsqueda. Lo usa el historial de
+     * búsquedas y, en el futuro, el contador de cuota de cada plan.
+     */
+    public int countQueries(SearchRequest request) {
+        return buildDatePairs(request).size();
+    }
+
     /** Genera todos los pares (ida, vuelta) a explorar (lógica pura, sin llamadas). */
     private List<DatePair> buildDatePairs(SearchRequest request) {
         // La precisión decide cada cuántos días avanzamos la fecha de salida:

@@ -4,22 +4,32 @@ import { Link, useNavigate } from 'react-router'
 import { Button } from '@/components/base/buttons/button'
 import { Checkbox } from '@/components/base/checkbox/checkbox'
 import { Input } from '@/components/base/input/input'
+import { useAuth } from '../auth/AuthContext'
 
 /**
- * Pantalla de inicio de sesión. SOLO INTERFAZ por ahora: el submit no llama a
- * ningún sitio. Cuando exista la base de datos de usuarios, aquí se llamará a un
- * endpoint de autenticación del backend (p. ej. POST /api/auth/login) y se
- * guardará la sesión.
+ * Inicio de sesión contra POST /api/auth/login. Si va bien, el token queda
+ * guardado (AuthContext) y volvemos al buscador ya con sesión.
  */
 export function Login() {
   const navigate = useNavigate()
+  const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    // TODO(auth): llamar al backend cuando exista la lógica de usuarios.
-    navigate('/')
+    setError(null)
+    setSubmitting(true)
+    try {
+      await login(email, password)
+      navigate('/')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo iniciar sesión')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -61,7 +71,13 @@ export function Login() {
             </Link>
           </div>
 
-          <Button type="submit" size="lg" color="primary">
+          {error && (
+            <p className="rounded-lg bg-error-primary px-3 py-2 text-sm text-error-primary">
+              {error}
+            </p>
+          )}
+
+          <Button type="submit" size="lg" color="primary" isLoading={submitting}>
             Iniciar sesión
           </Button>
         </form>

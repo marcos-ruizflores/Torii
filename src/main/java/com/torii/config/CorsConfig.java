@@ -3,9 +3,11 @@ package com.torii.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
@@ -19,13 +21,15 @@ import java.util.List;
  * navegador aplica la "same-origin policy" y bloquea las llamadas salvo que el
  * backend declare explícitamente qué orígenes acepta — que es esto.
  *
+ * <p>Se expone como bean {@code corsConfigurationSource} porque es lo que Spring
+ * Security busca para su filtro CORS (que corre ANTES que el resto de la cadena de
+ * seguridad, imprescindible para que los preflight OPTIONS no acaben en 401).
+ *
  * <p>Los orígenes se configuran con {@code torii.cors.allowed-origins} (lista
- * separada por comas), así cada entorno permite solo los suyos: en local el dev
- * server de Vite, en producción el dominio real del frontend. Nunca usar "*" en
- * producción.
+ * separada por comas). Nunca usar "*" en producción.
  */
 @Configuration
-public class CorsConfig implements WebMvcConfigurer {
+public class CorsConfig {
 
     private static final Logger log = LoggerFactory.getLogger(CorsConfig.class);
 
@@ -37,13 +41,19 @@ public class CorsConfig implements WebMvcConfigurer {
         log.info("CORS: orígenes permitidos para /api/**: {}", allowedOrigins);
     }
 
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**")
-                .allowedOrigins(allowedOrigins.toArray(String[]::new))
-                .allowedMethods("GET", "POST")
-                // Cachear la respuesta de preflight 1h: el navegador no repite el
-                // OPTIONS en cada petición.
-                .maxAge(3600);
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(allowedOrigins);
+        config.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
+        // El frontend manda Content-Type y Authorization (el token JWT).
+        config.setAllowedHeaders(List.of("Content-Type", "Authorization"));
+        // Cachear la respuesta de preflight 1h: el navegador no repite el OPTIONS
+        // en cada petición.
+        config.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", config);
+        return source;
     }
 }

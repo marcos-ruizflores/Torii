@@ -1,8 +1,11 @@
 package com.torii.history;
 
+import com.torii.auth.SecurityConfig;
+import com.torii.config.CorsConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -18,6 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** Contrato HTTP del histórico: parámetros normalizados y forma del JSON. */
 @WebMvcTest(PriceHistoryController.class)
+@Import({SecurityConfig.class, CorsConfig.class})
 class PriceHistoryControllerTest {
 
     @Autowired

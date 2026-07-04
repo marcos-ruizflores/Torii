@@ -48,6 +48,18 @@
 			<artifactId>caffeine</artifactId>
 		</dependency>
 
+		<!-- Autenticación: Spring Security (BCrypt, filtros) + resource server para
+		     validar tokens JWT en cada petición. Los tokens los emitimos nosotros
+		     (HS256 con secreto simétrico) en el login/registro. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+		</dependency>
+
 		<!-- Persistencia: JPA/Hibernate contra PostgreSQL (Supabase). El esquema NO
 		     lo crea Hibernate: lo gestionan las migraciones de Flyway (versionadas
 		     en git, en src/main/resources/db/migration) y Hibernate solo VALIDA. -->
