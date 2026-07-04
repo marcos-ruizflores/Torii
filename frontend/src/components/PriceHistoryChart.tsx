@@ -44,10 +44,9 @@ function computeStats(points: PricePoint[]) {
 }
 
 /**
- * Evolución del mejor precio de la ruta en los últimos 7/30 días.
- *
- * Los datos vienen de fetchPriceHistory, que HOY es un mock determinista; cuando el
- * backend tenga base de datos e histórico real, solo cambiará esa función.
+ * Evolución del mejor precio de la ruta en los últimos 7/30 días, con datos REALES
+ * de la base de datos: cada búsqueda registra su mejor precio del día, así que la
+ * serie crece sola con el uso de Torii.
  */
 export function PriceHistoryChart({ origin, destination }: Props) {
   const [days, setDays] = useState<7 | 30>(30)
@@ -64,14 +63,9 @@ export function PriceHistoryChart({ origin, destination }: Props) {
     <section className="rounded-xl bg-primary p-6 shadow-xs ring-1 ring-secondary">
       {/* Cabecera: título + selector de período */}
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-primary">
-            Histórico de precios {origin} → {destination}
-          </h2>
-          <Badge type="pill-color" color="warning" size="sm">
-            Datos simulados
-          </Badge>
-        </div>
+        <h2 className="text-lg font-semibold text-primary">
+          Histórico de precios {origin} → {destination}
+        </h2>
         <div className="flex gap-1 rounded-lg bg-secondary p-1">
           <Button size="sm" color={days === 7 ? 'primary' : 'tertiary'} onClick={() => setDays(7)}>
             7 días
@@ -119,7 +113,20 @@ export function PriceHistoryChart({ origin, destination }: Props) {
         </div>
       )}
 
-      {history.isSuccess && stats && (
+      {/* Serie corta o vacía: el histórico se construye buscando. */}
+      {history.isSuccess && history.data.length < 2 && (
+        <div className="flex flex-col items-center gap-1 rounded-lg bg-secondary px-4 py-10 text-center">
+          <p className="text-sm font-medium text-secondary">
+            Todavía no hay histórico suficiente para esta ruta.
+          </p>
+          <p className="text-sm text-tertiary">
+            Cada búsqueda real registra el mejor precio del día: vuelve mañana y la curva
+            empezará a dibujarse.
+          </p>
+        </div>
+      )}
+
+      {history.isSuccess && history.data.length >= 2 && stats && (
         <ResponsiveContainer width="100%" height={300}>
           <AreaChart data={history.data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <defs>
@@ -178,8 +185,8 @@ export function PriceHistoryChart({ origin, destination }: Props) {
       )}
 
       <p className="mt-3 text-xs text-tertiary">
-        El mejor precio observado cada día para esta ruta. Cuando Torii tenga base de datos,
-        aquí se verá el histórico real acumulado por tus búsquedas.
+        El mejor precio observado cada día para esta ruta, acumulado por las búsquedas reales
+        de Torii.
       </p>
     </section>
   )

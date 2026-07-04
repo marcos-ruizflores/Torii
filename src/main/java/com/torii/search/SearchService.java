@@ -1,33 +1,44 @@
 package com.torii.search;
 
 import com.torii.algorithm.SlidingWindowEngine;
+import com.torii.history.PriceHistoryService;
 import com.torii.model.FlightOffer;
 import com.torii.model.SearchRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 /**
- * Orquestador de búsquedas.
- *
- * <p>De momento es una fina capa sobre el {@link SlidingWindowEngine}, pero existe a
- * propósito: es el sitio natural donde, en fases siguientes, vivirá la lógica de
- * caché (mirar Redis antes de lanzar el algoritmo), el cálculo del TTL variable
- * según la cercanía del viaje, el registro del histórico en base de datos, etc. El
- * controlador REST nunca hablará con el algoritmo directamente, solo con este
- * servicio.
+ * Orquestador de búsquedas: ejecuta el algoritmo y registra los "efectos
+ * secundarios" de cada búsqueda (histórico de precios; próximamente, historial de
+ * búsquedas del usuario y consumo de cuota del plan). El controlador REST nunca
+ * habla con el algoritmo directamente, solo con este servicio.
  */
 @Service
 public class SearchService {
 
-    private final SlidingWindowEngine engine;
+    private static final Logger log = LoggerFactory.getLogger(SearchService.class);
 
-    public SearchService(SlidingWindowEngine engine) {
+    private final SlidingWindowEngine engine;
+    private final PriceHistoryService priceHistory;
+
+    public SearchService(SlidingWindowEngine engine, PriceHistoryService priceHistory) {
         this.engine = engine;
+        this.priceHistory = priceHistory;
     }
 
     public List<FlightOffer> search(SearchRequest request) {
-        // Futuro: 1) consultar caché → 2) si falla, ejecutar engine → 3) guardar en caché con TTL.
-        return engine.findBestOffers(request);
+        List<FlightOffer> offers = engine.findBestOffers(request);
+
+        // El histórico es un extra: si la BD fallara, la búsqueda debe responder igual.
+        try {
+            priceHistory.recordObservation(request.origin(), request.destination(), offers);
+        } catch (RuntimeException e) {
+            log.warn("No se pudo registrar el histórico de precios: {}", e.getMessage());
+        }
+
+        return offers;
     }
 }
