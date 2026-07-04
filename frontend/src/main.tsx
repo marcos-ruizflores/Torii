@@ -3,7 +3,10 @@ import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import App from './App.tsx'
+import { Login } from './pages/Login.tsx'
 import { NotFound } from './pages/NotFound.tsx'
+import { Pricing } from './pages/Pricing.tsx'
+import { SignUp } from './pages/SignUp.tsx'
 
 // Estilos globales: Tailwind + theme de Untitled UI (colores, tipografía, tokens).
 import '@/styles/globals.css'
@@ -17,6 +20,10 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<App />} />
+          {/* Pantallas de cuenta y planes: SOLO interfaz, la lógica llegará con la BD. */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/planes" element={<Pricing />} />
           {/* Cualquier ruta desconocida cae en la página 404. */}
           <Route path="*" element={<NotFound />} />
         </Routes>

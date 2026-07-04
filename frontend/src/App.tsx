@@ -1,13 +1,16 @@
 import { useState } from 'react'
-import { AlertCircle, Plane } from '@untitledui/icons'
+import { AlertCircle, Plane, Zap } from '@untitledui/icons'
+import { useNavigate } from 'react-router'
 import { SearchForm } from './components/SearchForm'
 import { ResultsTable } from './components/ResultsTable'
 import { RouteMap } from './components/RouteMap'
 import { PriceHistoryChart } from './components/PriceHistoryChart'
+import { Button } from '@/components/base/buttons/button'
 import { useSearch } from './hooks/useSearch'
 import type { SearchRequest } from './api/types'
 
 export default function App() {
+  const navigate = useNavigate()
   const search = useSearch()
   // Guardamos la ruta de la última búsqueda para el mapa y el histórico de precios.
   const [route, setRoute] = useState<{ origin: string; destination: string } | null>(null)
@@ -20,16 +23,30 @@ export default function App() {
   return (
     <div className="min-h-dvh bg-secondary">
       <main className="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-10">
-        <header className="flex items-center gap-3">
-          <div className="flex size-12 items-center justify-center rounded-lg bg-brand-solid text-white">
-            <Plane className="size-6" />
+        <header className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex size-12 items-center justify-center rounded-lg bg-brand-solid text-white">
+              <Plane className="size-6" />
+            </div>
+            <div>
+              <h1 className="text-display-xs font-semibold text-primary">Torii</h1>
+              <p className="text-sm text-tertiary">
+                Encuentra la mejor oferta de vuelo dentro de tu rango de vacaciones
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-display-xs font-semibold text-primary">Torii</h1>
-            <p className="text-sm text-tertiary">
-              Encuentra la mejor oferta de vuelo dentro de tu rango de vacaciones
-            </p>
-          </div>
+          {/* Navegación de cuenta: solo interfaz hasta que exista la BD de usuarios. */}
+          <nav className="flex items-center gap-2">
+            <Button color="tertiary" size="sm" iconLeading={Zap} onClick={() => navigate('/planes')}>
+              Planes
+            </Button>
+            <Button color="secondary" size="sm" onClick={() => navigate('/login')}>
+              Iniciar sesión
+            </Button>
+            <Button color="primary" size="sm" onClick={() => navigate('/signup')}>
+              Crear cuenta
+            </Button>
+          </nav>
         </header>
 
         <SearchForm onSearch={handleSearch} loading={search.isPending} />
