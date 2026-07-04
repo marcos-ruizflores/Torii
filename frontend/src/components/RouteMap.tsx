@@ -1,5 +1,3 @@
-import { Alert, Paper, Title } from '@mantine/core'
-import { IconMapPin } from '@tabler/icons-react'
 import { ComposableMap, Geographies, Geography, Line, Marker } from 'react-simple-maps'
 import { lookupAirport } from '../api/airports'
 
@@ -24,20 +22,23 @@ export function RouteMap({ origin, destination }: Props) {
   if (!from || !to) {
     const desconocido = !from ? origin : destination
     return (
-      <Paper shadow="sm" p="lg" radius="md" withBorder>
-        <Alert color="yellow" icon={<IconMapPin />} title="Mapa no disponible">
-          No tengo las coordenadas del aeropuerto «{desconocido}». El mapa solo conoce
-          una lista de aeropuertos principales por ahora.
-        </Alert>
-      </Paper>
+      <section className="rounded-xl bg-primary p-6 shadow-xs ring-1 ring-secondary">
+        <div className="rounded-lg bg-warning-primary p-4 text-sm text-warning-primary">
+          <p className="font-medium">Mapa no disponible</p>
+          <p className="mt-1">
+            No tengo las coordenadas del aeropuerto «{desconocido}». El mapa solo conoce una
+            lista de aeropuertos principales por ahora.
+          </p>
+        </div>
+      </section>
     )
   }
 
   return (
-    <Paper shadow="sm" p="lg" radius="md" withBorder>
-      <Title order={4} mb="md">
+    <section className="rounded-xl bg-primary p-6 shadow-xs ring-1 ring-secondary">
+      <h2 className="mb-4 text-lg font-semibold text-primary">
         Ruta: {from.name} ({origin}) → {to.name} ({destination})
-      </Title>
+      </h2>
 
       <ComposableMap
         projection="geoEqualEarth"
@@ -89,6 +90,6 @@ export function RouteMap({ origin, destination }: Props) {
           </text>
         </Marker>
       </ComposableMap>
-    </Paper>
+    </section>
   )
 }

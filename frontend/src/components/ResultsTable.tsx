@@ -1,4 +1,6 @@
-import { Anchor, Badge, Paper, Table, Text, Title } from '@mantine/core'
+import { Table, TableCard } from '@/components/application/table/table'
+import { Badge } from '@/components/base/badges/badges'
+import { Button } from '@/components/base/buttons/button'
 import type { FlightOffer } from '../api/types'
 
 interface Props {
@@ -19,90 +21,79 @@ function shortTime(time: string | null): string {
 export function ResultsTable({ offers }: Props) {
   if (offers.length === 0) {
     return (
-      <Paper p="lg" radius="md" withBorder>
-        <Text c="dimmed">No se han encontrado ofertas para esos criterios.</Text>
-      </Paper>
+      <section className="rounded-xl bg-primary p-6 shadow-xs ring-1 ring-secondary">
+        <p className="text-sm text-tertiary">No se han encontrado ofertas para esos criterios.</p>
+      </section>
     )
   }
 
   const cheapest = offers[0].price
 
-  const rows = offers.map((o, i) => {
-    const extra = o.price - cheapest
-    return (
-      <Table.Tr key={`${o.airline}-${o.departDate}-${i}`}>
-        <Table.Td>{i + 1}</Table.Td>
-        <Table.Td>
-          <Text fw={700}>
-            {o.price.toFixed(2)} {o.currency}
-          </Text>
-          {extra > 0 && (
-            <Text size="xs" c="dimmed">
-              +{extra.toFixed(2)}
-            </Text>
-          )}
-        </Table.Td>
-        <Table.Td>{o.airline}</Table.Td>
-        <Table.Td>
-          {o.stops === 0 ? (
-            <Badge color="green" variant="light">
-              Directo
-            </Badge>
-          ) : (
-            <Badge color="gray" variant="light">
-              {o.stops} escala{o.stops > 1 ? 's' : ''}
-              {o.stopovers.length > 0 && ` · ${o.stopovers.join(', ')}`}
-            </Badge>
-          )}
-        </Table.Td>
-        <Table.Td>
-          {o.departDate}
-          {shortTime(o.departureTime) && (
-            <Text size="xs" c="dimmed">
-              {shortTime(o.departureTime)}
-            </Text>
-          )}
-        </Table.Td>
-        <Table.Td>
-          {o.returnDate}
-          {shortTime(o.returnDepartureTime) && (
-            <Text size="xs" c="dimmed">
-              {shortTime(o.returnDepartureTime)}
-            </Text>
-          )}
-        </Table.Td>
-        <Table.Td>{durationDays(o.departDate, o.returnDate)} días</Table.Td>
-        <Table.Td>
-          <Anchor href={o.bookingUrl} target="_blank" rel="noreferrer">
-            Reservar
-          </Anchor>
-        </Table.Td>
-      </Table.Tr>
-    )
-  })
-
   return (
-    <Paper shadow="sm" p="lg" radius="md" withBorder>
-      <Title order={4} mb="md">
-        Mejores {offers.length} ofertas
-      </Title>
-      <Table.ScrollContainer minWidth={700}>
-        <Table striped highlightOnHover verticalSpacing="sm">
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>#</Table.Th>
-              <Table.Th>Precio</Table.Th>
-              <Table.Th>Aerolínea</Table.Th>
-              <Table.Th>Escalas</Table.Th>
-              <Table.Th>Ida</Table.Th>
-              <Table.Th>Vuelta</Table.Th>
-              <Table.Th>Estancia</Table.Th>
-              <Table.Th>Enlace</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>{rows}</Table.Tbody>
-        </Table>
-      </Table.ScrollContainer>
-    </Paper>
+    <TableCard.Root>
+      <TableCard.Header
+        title={`Mejores ${offers.length} ofertas`}
+        description="Ordenadas de más barata a más cara"
+      />
+      <Table aria-label="Ofertas de vuelo" size="sm">
+        <Table.Header>
+          <Table.Head id="pos" label="#" isRowHeader />
+          <Table.Head id="price" label="Precio" />
+          <Table.Head id="airline" label="Aerolínea" />
+          <Table.Head id="stops" label="Escalas" />
+          <Table.Head id="depart" label="Ida" />
+          <Table.Head id="return" label="Vuelta" />
+          <Table.Head id="duration" label="Estancia" />
+          <Table.Head id="link" label="Enlace" />
+        </Table.Header>
+        <Table.Body>
+          {offers.map((o, i) => {
+            const extra = o.price - cheapest
+            return (
+              <Table.Row id={`${o.airline}-${o.departDate}-${i}`} key={`${o.airline}-${o.departDate}-${i}`}>
+                <Table.Cell>{i + 1}</Table.Cell>
+                <Table.Cell>
+                  <span className="font-semibold text-primary">
+                    {o.price.toFixed(2)} {o.currency}
+                  </span>
+                  {extra > 0 && <div className="text-xs text-tertiary">+{extra.toFixed(2)}</div>}
+                </Table.Cell>
+                <Table.Cell>{o.airline}</Table.Cell>
+                <Table.Cell>
+                  {o.stops === 0 ? (
+                    <Badge type="pill-color" color="success" size="sm">
+                      Directo
+                    </Badge>
+                  ) : (
+                    <Badge type="pill-color" color="gray" size="sm">
+                      {o.stops} escala{o.stops > 1 ? 's' : ''}
+                      {o.stopovers.length > 0 && ` · ${o.stopovers.join(', ')}`}
+                    </Badge>
+                  )}
+                </Table.Cell>
+                <Table.Cell>
+                  {o.departDate}
+                  {shortTime(o.departureTime) && (
+                    <div className="text-xs text-tertiary">{shortTime(o.departureTime)}</div>
+                  )}
+                </Table.Cell>
+                <Table.Cell>
+                  {o.returnDate}
+                  {shortTime(o.returnDepartureTime) && (
+                    <div className="text-xs text-tertiary">{shortTime(o.returnDepartureTime)}</div>
+                  )}
+                </Table.Cell>
+                <Table.Cell>{durationDays(o.departDate, o.returnDate)} días</Table.Cell>
+                <Table.Cell>
+                  <Button color="link-color" size="sm" href={o.bookingUrl} target="_blank" rel="noreferrer">
+                    Reservar
+                  </Button>
+                </Table.Cell>
+              </Table.Row>
+            )
+          })}
+        </Table.Body>
+      </Table>
+    </TableCard.Root>
   )
 }

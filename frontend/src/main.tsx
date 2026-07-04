@@ -1,24 +1,26 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-
-// Estilos base de Mantine (imprescindibles para que sus componentes se vean bien).
-import '@mantine/core/styles.css'
-import '@mantine/dates/styles.css'
-
-import { MantineProvider } from '@mantine/core'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { BrowserRouter, Route, Routes } from 'react-router'
 import App from './App.tsx'
+import { NotFound } from './pages/NotFound.tsx'
+
+// Estilos globales: Tailwind + theme de Untitled UI (colores, tipografía, tokens).
+import '@/styles/globals.css'
 
 // Cliente de TanStack Query: gestiona el estado de las llamadas a la API.
 const queryClient = new QueryClient()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {/* MantineProvider habilita el sistema de temas/componentes de Mantine. */}
-    <MantineProvider defaultColorScheme="auto">
-      <QueryClientProvider client={queryClient}>
-        <App />
-      </QueryClientProvider>
-    </MantineProvider>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<App />} />
+          {/* Cualquier ruta desconocida cae en la página 404. */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
   </StrictMode>,
 )

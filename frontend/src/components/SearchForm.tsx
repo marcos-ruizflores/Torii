@@ -1,32 +1,18 @@
 import { useState } from 'react'
-import {
-  Badge,
-  Button,
-  Group,
-  NumberInput,
-  Paper,
-  SegmentedControl,
-  SimpleGrid,
-  Stack,
-  Text,
-  TextInput,
-  Title,
-} from '@mantine/core'
-import { DatePickerInput } from '@mantine/dates'
-import { IconSearch } from '@tabler/icons-react'
+import { getLocalTimeZone, today } from '@internationalized/date'
+import type { DateRange } from 'react-aria-components'
+import { SearchLg } from '@untitledui/icons'
+import { DateRangePicker } from '@/components/application/date-picker/date-range-picker'
+import { Badge } from '@/components/base/badges/badges'
+import { Button } from '@/components/base/buttons/button'
+import { Input } from '@/components/base/input/input'
+import { InputNumber } from '@/components/base/input/input-number'
+import { Select } from '@/components/base/select/select'
 import type { SearchPrecision, SearchRequest } from '../api/types'
 
 interface Props {
   onSearch: (request: SearchRequest) => void
   loading: boolean
-}
-
-/** Formato AAAA-MM-DD que espera el backend (sin desfase de zona horaria). */
-function toIsoDate(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
 }
 
 const MS_PER_DAY = 86_400_000
@@ -37,15 +23,17 @@ const MS_PER_DAY = 86_400_000
  * usuario ANTES de pulsar Buscar y no quemar cuota de las APIs externas.
  */
 function estimateQueries(
-  rangeStart: Date | null,
-  rangeEnd: Date | null,
+  range: DateRange | null,
   baseDuration: number,
   variability: number,
   precision: SearchPrecision,
 ): number {
-  if (!rangeStart || !rangeEnd) return 0
+  if (!range?.start || !range?.end) return 0
   const step = precision === 'FAST' ? 3 : precision === 'BALANCED' ? 2 : 1
-  const rangeDays = Math.round((rangeEnd.getTime() - rangeStart.getTime()) / MS_PER_DAY)
+  const tz = getLocalTimeZone()
+  const rangeDays = Math.round(
+    (range.end.toDate(tz).getTime() - range.start.toDate(tz).getTime()) / MS_PER_DAY,
+  )
 
   let total = 0
   for (let d = baseDuration; d <= baseDuration + variability; d++) {
@@ -57,35 +45,45 @@ function estimateQueries(
   return total
 }
 
+const PRECISION_OPTIONS = [
+  { id: 'FAST', label: 'Rápida (menos consultas)' },
+  { id: 'BALANCED', label: 'Equilibrada' },
+  { id: 'EXHAUSTIVE', label: 'Exhaustiva' },
+]
+
 export function SearchForm({ onSearch, loading }: Props) {
-  // Valores por defecto SEGUROS: un rango pequeño que solo hace ~3 consultas, para
-  // no quemar la cuota de las APIs externas con la primera búsqueda.
+  // Rango por defecto SEGURO y relativo a hoy (~3 consultas): fechas fijas caducan y
+  // un rango grande quemaría la cuota de las APIs con la primera búsqueda.
+  const defaultStart = today(getLocalTimeZone()).add({ months: 2 })
+
   const [origin, setOrigin] = useState('BCN')
   const [destination, setDestination] = useState('NRT')
-  const [rangeStart, setRangeStart] = useState<Date | null>(new Date('2026-09-01'))
-  const [rangeEnd, setRangeEnd] = useState<Date | null>(new Date('2026-09-17'))
-  const [baseDuration, setBaseDuration] = useState<number>(14)
-  const [variability, setVariability] = useState<number>(0)
-  const [maxStops, setMaxStops] = useState<number>(2)
-  const [topN, setTopN] = useState<number>(5)
+  const [range, setRange] = useState<DateRange | null>({
+    start: defaultStart,
+    end: defaultStart.add({ days: 16 }),
+  })
+  const [baseDuration, setBaseDuration] = useState(14)
+  const [variability, setVariability] = useState(0)
+  const [maxStops, setMaxStops] = useState(2)
+  const [topN, setTopN] = useState(5)
   const [precision, setPrecision] = useState<SearchPrecision>('EXHAUSTIVE')
-  // Presupuesto máximo opcional: '' = sin límite.
-  const [maxPrice, setMaxPrice] = useState<number | ''>('')
+  // Presupuesto máximo opcional: null = sin límite.
+  const [maxPrice, setMaxPrice] = useState<number | null>(null)
 
-  const estimatedQueries = estimateQueries(rangeStart, rangeEnd, baseDuration, variability, precision)
+  const estimatedQueries = estimateQueries(range, baseDuration, variability, precision)
   // Umbrales de aviso pensando en cuotas gratuitas pequeñas (SerpApi ~100/mes).
-  const queryColor = estimatedQueries > 100 ? 'red' : estimatedQueries > 30 ? 'yellow' : 'green'
+  const queryColor = estimatedQueries > 100 ? 'error' : estimatedQueries > 30 ? 'warning' : 'success'
 
-  const canSubmit =
-    origin.length === 3 && destination.length === 3 && rangeStart !== null && rangeEnd !== null
+  const canSubmit = origin.length === 3 && destination.length === 3 && range !== null
 
   function handleSubmit() {
-    if (!rangeStart || !rangeEnd) return
+    if (!range?.start || !range?.end) return
     const request: SearchRequest = {
       origin: origin.toUpperCase(),
       destination: destination.toUpperCase(),
-      rangeStart: toIsoDate(rangeStart),
-      rangeEnd: toIsoDate(rangeEnd),
+      // CalendarDate.toString() ya produce "AAAA-MM-DD" sin líos de zona horaria.
+      rangeStart: range.start.toString(),
+      rangeEnd: range.end.toString(),
       baseDuration,
       variability,
       maxStops,
@@ -93,132 +91,120 @@ export function SearchForm({ onSearch, loading }: Props) {
       precision,
     }
     // El presupuesto es opcional: solo se envía si el usuario puso un número.
-    if (maxPrice !== '' && maxPrice > 0) {
+    if (maxPrice !== null && maxPrice > 0) {
       request.maxPrice = maxPrice
     }
     onSearch(request)
   }
 
   return (
-    <Paper shadow="sm" p="lg" radius="md" withBorder>
-      <Stack gap="md">
-        <Title order={4}>Buscar ofertas</Title>
+    <section className="rounded-xl bg-primary p-6 shadow-xs ring-1 ring-secondary">
+      <div className="flex flex-col gap-5">
+        <h2 className="text-lg font-semibold text-primary">Buscar ofertas</h2>
 
-        <SimpleGrid cols={{ base: 1, sm: 2 }}>
-          <TextInput
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Input
             label="Origen (IATA)"
             placeholder="BCN"
             value={origin}
             maxLength={3}
-            onChange={(e) => setOrigin(e.currentTarget.value.toUpperCase())}
+            onChange={(value) => setOrigin(value.toUpperCase())}
           />
-          <TextInput
+          <Input
             label="Destino (IATA)"
             placeholder="NRT"
             value={destination}
             maxLength={3}
-            onChange={(e) => setDestination(e.currentTarget.value.toUpperCase())}
+            onChange={(value) => setDestination(value.toUpperCase())}
           />
-        </SimpleGrid>
+        </div>
 
-        <SimpleGrid cols={{ base: 1, sm: 2 }}>
-          <DatePickerInput
-            label="Inicio del rango de vacaciones"
-            value={rangeStart}
-            onChange={(value) => setRangeStart(value ? new Date(value) : null)}
-          />
-          <DatePickerInput
-            label="Fin del rango de vacaciones"
-            value={rangeEnd}
-            onChange={(value) => setRangeEnd(value ? new Date(value) : null)}
-          />
-        </SimpleGrid>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-secondary">Rango de vacaciones</span>
+          <DateRangePicker value={range} onChange={setRange} />
+        </div>
 
-        <SimpleGrid cols={{ base: 2, sm: 4 }}>
-          <NumberInput
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <InputNumber
             label="Días de estancia"
-            min={1}
-            max={365}
+            minValue={1}
+            maxValue={365}
             value={baseDuration}
-            onChange={(v) => setBaseDuration(Number(v) || 1)}
+            onChange={(v) => setBaseDuration(Number.isNaN(v) ? 1 : v)}
           />
-          <NumberInput
+          <InputNumber
             label="Variabilidad (+días)"
-            min={0}
-            max={30}
+            minValue={0}
+            maxValue={30}
             value={variability}
-            onChange={(v) => setVariability(Number(v) || 0)}
+            onChange={(v) => setVariability(Number.isNaN(v) ? 0 : v)}
           />
-          <NumberInput
+          <InputNumber
             label="Máx. escalas"
-            min={0}
-            max={3}
+            minValue={0}
+            maxValue={3}
             value={maxStops}
-            onChange={(v) => setMaxStops(Number(v) || 0)}
+            onChange={(v) => setMaxStops(Number.isNaN(v) ? 0 : v)}
           />
-          <NumberInput
+          <InputNumber
             label="Nº de ofertas"
-            min={1}
-            max={50}
+            minValue={1}
+            maxValue={50}
             value={topN}
-            onChange={(v) => setTopN(Number(v) || 1)}
+            onChange={(v) => setTopN(Number.isNaN(v) ? 1 : v)}
           />
-        </SimpleGrid>
+        </div>
 
-        <Group justify="space-between" align="flex-end" wrap="wrap">
-          <Group gap="lg" align="flex-end" wrap="wrap">
-            <Stack gap={4}>
-              <span style={{ fontSize: 14, fontWeight: 500 }}>Precisión de la búsqueda</span>
-              <SegmentedControl
-                value={precision}
-                onChange={(v) => setPrecision(v as SearchPrecision)}
-                data={[
-                  { label: 'Rápida', value: 'FAST' },
-                  { label: 'Equilibrada', value: 'BALANCED' },
-                  { label: 'Exhaustiva', value: 'EXHAUSTIVE' },
-                ]}
-              />
-            </Stack>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="flex flex-wrap items-end gap-4">
+            <Select
+              label="Precisión de la búsqueda"
+              className="w-64"
+              items={PRECISION_OPTIONS}
+              selectedKey={precision}
+              onSelectionChange={(key) => setPrecision(key as SearchPrecision)}
+            >
+              {(item) => <Select.Item id={item.id} label={item.label} />}
+            </Select>
 
-            <NumberInput
+            <InputNumber
               label="Precio máximo (€)"
-              description="Opcional"
+              hint="Opcional"
               placeholder="Sin límite"
-              min={0}
-              w={150}
-              value={maxPrice}
-              onChange={(v) => setMaxPrice(v === '' ? '' : Number(v))}
+              minValue={0}
+              className="w-40"
+              value={maxPrice ?? NaN}
+              onChange={(v) => setMaxPrice(Number.isNaN(v) ? null : v)}
             />
-          </Group>
+          </div>
 
-          <Stack gap={4} align="flex-end">
-            <Group gap="xs">
-              <Text size="sm" c="dimmed">
-                Esta búsqueda hará
-              </Text>
-              <Badge color={queryColor} variant="light" size="lg">
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-tertiary">Esta búsqueda hará</span>
+              <Badge type="pill-color" color={queryColor} size="lg">
                 ~{estimatedQueries} consultas
               </Badge>
-            </Group>
+            </div>
             <Button
-              leftSection={<IconSearch size={18} />}
-              onClick={handleSubmit}
-              loading={loading}
-              disabled={!canSubmit}
               size="md"
+              color="primary"
+              iconLeading={SearchLg}
+              isLoading={loading}
+              isDisabled={!canSubmit}
+              onClick={handleSubmit}
             >
               Buscar
             </Button>
-          </Stack>
-        </Group>
+          </div>
+        </div>
 
-        {queryColor === 'red' && (
-          <Text size="xs" c="red">
+        {queryColor === 'error' && (
+          <p className="text-xs text-error-primary">
             ⚠️ Son muchas consultas: pueden agotar la cuota gratuita de las APIs externas.
             Reduce el rango de fechas o usa precisión «Rápida».
-          </Text>
+          </p>
         )}
-      </Stack>
-    </Paper>
+      </div>
+    </section>
   )
 }
