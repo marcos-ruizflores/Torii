@@ -54,6 +54,14 @@ export interface AuthResponse {
   user: User
 }
 
+/** Cuota del mes, de GET /api/me/usage. limit null = plan ilimitado. */
+export interface QuotaUsage {
+  plan: string
+  limit: number | null
+  used: number
+  month: string
+}
+
 /** Una búsqueda guardada, de GET /api/me/searches. Permite repetirla con un clic. */
 export interface SavedSearch {
   id: number

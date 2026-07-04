@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { http } from './http'
-import type { AuthResponse, ProblemDetail, SavedSearch, User } from './types'
+import type { AuthResponse, ProblemDetail, QuotaUsage, SavedSearch, User } from './types'
 
 /** Extrae el mensaje útil de un error del backend (ProblemDetail o texto plano). */
 function messageFrom(err: unknown, fallback: string): string {
@@ -35,8 +35,14 @@ export async function fetchMe(): Promise<User> {
   return data
 }
 
-/** Las últimas búsquedas del usuario autenticado. */
-export async function fetchMySearches(): Promise<SavedSearch[]> {
-  const { data } = await http.get<SavedSearch[]>('/api/me/searches')
+/** Las últimas búsquedas del usuario autenticado (el backend admite hasta 50). */
+export async function fetchMySearches(limit = 10): Promise<SavedSearch[]> {
+  const { data } = await http.get<SavedSearch[]>('/api/me/searches', { params: { limit } })
+  return data
+}
+
+/** Cuota del mes: cuántas consultas lleva gastadas el usuario y cuál es su límite. */
+export async function fetchMyUsage(): Promise<QuotaUsage> {
+  const { data } = await http.get<QuotaUsage>('/api/me/usage')
   return data
 }

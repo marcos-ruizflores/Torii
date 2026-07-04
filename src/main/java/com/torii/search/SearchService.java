@@ -5,6 +5,7 @@ import com.torii.history.PriceHistoryService;
 import com.torii.history.SearchHistoryService;
 import com.torii.model.FlightOffer;
 import com.torii.model.SearchRequest;
+import com.torii.user.PlanQuotaService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
@@ -26,18 +27,27 @@ public class SearchService {
     private final SlidingWindowEngine engine;
     private final PriceHistoryService priceHistory;
     private final SearchHistoryService searchHistory;
+    private final PlanQuotaService quota;
 
     public SearchService(SlidingWindowEngine engine, PriceHistoryService priceHistory,
-                         SearchHistoryService searchHistory) {
+                         SearchHistoryService searchHistory, PlanQuotaService quota) {
         this.engine = engine;
         this.priceHistory = priceHistory;
         this.searchHistory = searchHistory;
+        this.quota = quota;
     }
 
     /**
      * @param userId id del usuario autenticado, o {@code null} si la búsqueda es anónima
      */
     public List<FlightOffer> search(SearchRequest request, @Nullable Long userId) {
+        // La cuota se comprueba y descuenta ANTES de trabajar: si no queda, se
+        // rechaza con 429 sin gastar ni una llamada a las APIs externas. Esto NO va
+        // en el try/catch de abajo: la cuota es una regla de negocio, no un extra.
+        if (userId != null) {
+            quota.consume(userId, engine.countQueries(request));
+        }
+
         List<FlightOffer> offers = engine.findBestOffers(request);
 
         // Los registros son extras: si la BD fallara, la búsqueda debe responder igual.

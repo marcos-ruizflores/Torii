@@ -1,6 +1,7 @@
 package com.torii.history;
 
 import com.torii.model.SearchRequest;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,10 +26,10 @@ public class SearchHistoryService {
         repository.save(new SearchRecord(userId, request, queriesUsed));
     }
 
-    /** Las últimas búsquedas del usuario, la más reciente primero. */
+    /** Las últimas {@code limit} búsquedas del usuario, la más reciente primero. */
     @Transactional(readOnly = true)
-    public List<SavedSearchDto> recentSearches(Long userId) {
-        return repository.findTop10ByUserIdOrderByCreatedAtDesc(userId).stream()
+    public List<SavedSearchDto> recentSearches(Long userId, int limit) {
+        return repository.findByUserIdOrderByCreatedAtDesc(userId, PageRequest.of(0, limit)).stream()
                 .map(SavedSearchDto::from)
                 .toList();
     }

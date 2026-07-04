@@ -32,4 +32,14 @@ public class ApiExceptionHandler {
     public ProblemDetail onIllegalArgument(IllegalArgumentException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
+
+    /**
+     * Errores de negocio lanzados como ResponseStatusException (email duplicado 409,
+     * credenciales 401, cuota agotada 429...). Sin esto, Spring devuelve su error
+     * genérico SIN el mensaje, y el frontend no puede explicarle nada al usuario.
+     */
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ProblemDetail onResponseStatus(org.springframework.web.server.ResponseStatusException ex) {
+        return ProblemDetail.forStatusAndDetail(ex.getStatusCode(), ex.getReason());
+    }
 }

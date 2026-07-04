@@ -1,7 +1,7 @@
-import { useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertCircle, LogOut01, Plane, Zap } from '@untitledui/icons'
-import { useNavigate } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 import { SearchForm } from './components/SearchForm'
 import { ResultsTable } from './components/ResultsTable'
 import { RouteMap } from './components/RouteMap'
@@ -11,23 +11,48 @@ import { Button } from '@/components/base/buttons/button'
 import { RecentSearches } from './components/RecentSearches'
 import { useAuth } from './auth/AuthContext'
 import { useSearch } from './hooks/useSearch'
+import { fetchMyUsage } from './api/authApi'
 import type { SearchRequest } from './api/types'
 
 export default function App() {
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
   const { user, logout } = useAuth()
   const search = useSearch()
   // Guardamos la ruta de la última búsqueda para el mapa y el histórico de precios.
   const [route, setRoute] = useState<{ origin: string; destination: string } | null>(null)
 
+  // Cuota del mes del usuario (para el contador de la cabecera).
+  const usage = useQuery({
+    queryKey: ['my-usage'],
+    queryFn: fetchMyUsage,
+    enabled: !!user,
+  })
+
   function handleSearch(req: SearchRequest) {
     setRoute({ origin: req.origin, destination: req.destination })
     search.mutate(req, {
-      // La búsqueda recién hecha debe aparecer en "Mis últimas búsquedas".
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-searches'] }),
+      // La búsqueda recién hecha debe aparecer en el historial y en el contador.
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['my-searches'] })
+        queryClient.invalidateQueries({ queryKey: ['my-usage'] })
+      },
+      // Un 429 de cuota también refresca el contador (se muestra en el error).
+      onError: () => queryClient.invalidateQueries({ queryKey: ['my-usage'] }),
     })
   }
+
+  // "Repetir" desde /mis-busquedas llega como state de navegación: la ejecutamos
+  // al montar y limpiamos el state para no repetirla con cada recarga.
+  useEffect(() => {
+    const repeat = (location.state as { repeat?: SearchRequest } | null)?.repeat
+    if (repeat) {
+      navigate('.', { replace: true, state: null })
+      handleSearch(repeat)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="min-h-dvh bg-secondary">
@@ -56,6 +81,15 @@ export default function App() {
                 <Badge type="pill-color" color={user.plan === 'FREE' ? 'gray' : 'brand'} size="sm">
                   {user.plan}
                 </Badge>
+                {usage.isSuccess && usage.data.limit != null && (
+                  <Badge
+                    type="pill-color"
+                    size="sm"
+                    color={usage.data.used >= usage.data.limit ? 'error' : 'success'}
+                  >
+                    {usage.data.used}/{usage.data.limit} consultas
+                  </Badge>
+                )}
                 <Button color="secondary" size="sm" iconLeading={LogOut01} onClick={logout}>
                   Salir
                 </Button>
@@ -97,7 +131,9 @@ export default function App() {
           </div>
         )}
 
-        {search.isSuccess && <ResultsTable offers={search.data} />}
+        {search.isSuccess && route && (
+          <ResultsTable offers={search.data} origin={route.origin} destination={route.destination} />
+        )}
 
         {route && <PriceHistoryChart origin={route.origin} destination={route.destination} />}
       </main>

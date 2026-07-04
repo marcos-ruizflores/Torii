@@ -5,6 +5,7 @@ import { BrowserRouter, Route, Routes } from 'react-router'
 import { AuthProvider } from './auth/AuthContext.tsx'
 import App from './App.tsx'
 import { Login } from './pages/Login.tsx'
+import { MySearches } from './pages/MySearches.tsx'
 import { NotFound } from './pages/NotFound.tsx'
 import { Pricing } from './pages/Pricing.tsx'
 import { SignUp } from './pages/SignUp.tsx'
@@ -25,6 +26,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/planes" element={<Pricing />} />
+            <Route path="/mis-busquedas" element={<MySearches />} />
             {/* Cualquier ruta desconocida cae en la página 404. */}
             <Route path="*" element={<NotFound />} />
           </Routes>
