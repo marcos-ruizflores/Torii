@@ -3,17 +3,25 @@ package com.torii.auth;
 import com.torii.auth.AuthDtos.UserDto;
 import com.torii.history.SavedSearchDto;
 import com.torii.history.SearchHistoryService;
+import com.torii.user.Plan;
 import com.torii.user.PlanQuotaService;
+import com.torii.user.UserAccount;
 import com.torii.user.UserRepository;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -57,5 +65,29 @@ public class MeController {
     @GetMapping("/usage")
     public PlanQuotaService.Usage myUsage(@AuthenticationPrincipal Jwt jwt) {
         return quota.usageOf(Long.valueOf(jwt.getSubject()));
+    }
+
+    public record ChangePlanRequest(@NotBlank String plan) {}
+
+    /**
+     * Cambia el plan de la cuenta. SIN PAGOS todavía: existe para poder probar las
+     * cuotas de cada plan desde la página /planes. Cuando haya pasarela de pago,
+     * este endpoint pasará a ser la confirmación del cobro.
+     */
+    @PostMapping("/plan")
+    @Transactional
+    public UserDto changePlan(@AuthenticationPrincipal Jwt jwt,
+                              @Valid @RequestBody ChangePlanRequest request) {
+        Plan newPlan = Arrays.stream(Plan.values())
+                .filter(p -> p.name().equalsIgnoreCase(request.plan().strip()))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Plan desconocido: " + request.plan() + " (válidos: FREE, PRO, BUSINESS)"));
+
+        UserAccount user = users.findById(Long.valueOf(jwt.getSubject()))
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED, "La cuenta del token ya no existe"));
+        user.changePlan(newPlan);
+        return UserDto.from(users.save(user));
     }
 }

@@ -74,4 +74,9 @@ public class UserAccount {
     public Instant getCreatedAt() {
         return createdAt;
     }
+
+    /** Cambia el plan de la cuenta (hoy sin pagos; lo llama POST /api/me/plan). */
+    public void changePlan(Plan newPlan) {
+        this.plan = newPlan.name();
+    }
 }

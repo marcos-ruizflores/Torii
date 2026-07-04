@@ -80,6 +80,42 @@ class AuthFlowIntegrationTest {
     }
 
     @Test
+    void cambiarDePlanActualizaLaCuota() throws Exception {
+        String authJson = mvc.perform(post("/api/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Marcos","email":"plan@test.com","password":"superclave123"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String token = JsonPath.read(authJson, "$.token");
+
+        // Nace en FREE (límite 30)...
+        mvc.perform(get("/api/me/usage").header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$.plan").value("FREE"))
+                .andExpect(jsonPath("$.limit").value(30));
+
+        // ...sube a PRO...
+        mvc.perform(post("/api/me/plan")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"plan\":\"PRO\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.plan").value("PRO"));
+
+        // ...y la cuota pasa a 500.
+        mvc.perform(get("/api/me/usage").header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$.limit").value(500));
+
+        // Un plan inventado se rechaza con 400.
+        mvc.perform(post("/api/me/plan")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"plan\":\"MEGA\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void sinTokenMisBusquedasEs401PeroBuscarSigueSiendoPublico() throws Exception {
         mvc.perform(get("/api/me/searches")).andExpect(status().isUnauthorized());
 

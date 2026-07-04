@@ -1,8 +1,12 @@
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, CheckCircle, Zap } from '@untitledui/icons'
 import { useNavigate } from 'react-router'
 import { Badge } from '@/components/base/badges/badges'
 import { Button } from '@/components/base/buttons/button'
+import { changePlan } from '../api/authApi'
+import { useAuth } from '../auth/AuthContext'
+import type { User } from '../api/types'
 
 /**
  * Página de planes/mejora de plan, al estilo de las pricing pages de Untitled UI.
@@ -15,6 +19,7 @@ import { Button } from '@/components/base/buttons/button'
  */
 
 interface Plan {
+  key: User['plan'] // el nombre que entiende el backend (FREE/PRO/BUSINESS)
   name: string
   monthly: number // €/mes con pago mensual
   annualMonthly: number // €/mes equivalente con pago anual
@@ -26,6 +31,7 @@ interface Plan {
 
 const PLANS: Plan[] = [
   {
+    key: 'FREE',
     name: 'Gratis',
     monthly: 0,
     annualMonthly: 0,
@@ -39,6 +45,7 @@ const PLANS: Plan[] = [
     cta: 'Empezar gratis',
   },
   {
+    key: 'PRO',
     name: 'Pro',
     monthly: 9.99,
     annualMonthly: 7.99,
@@ -54,6 +61,7 @@ const PLANS: Plan[] = [
     featured: true,
   },
   {
+    key: 'BUSINESS',
     name: 'Business',
     monthly: 29.99,
     annualMonthly: 24.99,
@@ -72,7 +80,31 @@ const PLANS: Plan[] = [
 
 export function Pricing() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const { user, updateUser } = useAuth()
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly')
+  const [changing, setChanging] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleChoose(plan: Plan) {
+    // Sin sesión, elegir plan empieza por crear la cuenta.
+    if (!user) {
+      navigate('/signup')
+      return
+    }
+    setError(null)
+    setChanging(plan.key)
+    try {
+      const updated = await changePlan(plan.key)
+      updateUser(updated)
+      // El límite de cuota ha cambiado: refrescar el contador de la cabecera.
+      queryClient.invalidateQueries({ queryKey: ['my-usage'] })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo cambiar el plan')
+    } finally {
+      setChanging(null)
+    }
+  }
 
   return (
     <div className="min-h-dvh bg-primary">
@@ -152,20 +184,30 @@ export function Pricing() {
                   ))}
                 </ul>
 
-                <Button
-                  size="lg"
-                  color={plan.featured ? 'primary' : 'secondary'}
-                  onClick={() => navigate('/signup')}
-                >
-                  {plan.cta}
-                </Button>
+                {user?.plan === plan.key ? (
+                  <Button size="lg" color="secondary" isDisabled>
+                    Tu plan actual
+                  </Button>
+                ) : (
+                  <Button
+                    size="lg"
+                    color={plan.featured ? 'primary' : 'secondary'}
+                    isLoading={changing === plan.key}
+                    onClick={() => handleChoose(plan)}
+                  >
+                    {plan.cta}
+                  </Button>
+                )}
               </article>
             )
           })}
         </section>
 
+        {error && <p className="text-center text-sm text-error-primary">{error}</p>}
+
         <p className="text-center text-sm text-quaternary">
-          Los pagos aún no están activos: esta página es la interfaz del futuro sistema de planes.
+          Los pagos aún no están activos: el cambio de plan es instantáneo y gratuito mientras
+          Torii esté en desarrollo.
         </p>
       </main>
     </div>

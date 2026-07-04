@@ -46,3 +46,13 @@ export async function fetchMyUsage(): Promise<QuotaUsage> {
   const { data } = await http.get<QuotaUsage>('/api/me/usage')
   return data
 }
+
+/** Cambia el plan de la cuenta (sin pagos todavía). Devuelve el perfil actualizado. */
+export async function changePlan(plan: User['plan']): Promise<User> {
+  try {
+    const { data } = await http.post<User>('/api/me/plan', { plan })
+    return data
+  } catch (err) {
+    throw new Error(messageFrom(err, 'No se pudo cambiar el plan'))
+  }
+}
