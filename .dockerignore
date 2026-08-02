@@ -1,0 +1,11 @@
+# No enviar al contexto de build (más rápido y evita filtrar cosas):
+target/
+frontend/
+.git/
+.idea/
+.mvn/wrapper/maven-wrapper.jar
+*.iml
+.DS_Store
+docs/
+examples/
+scripts/
