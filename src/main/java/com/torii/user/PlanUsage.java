@@ -10,15 +10,15 @@ import java.io.Serializable;
 import java.time.LocalDate;
 
 /**
- * Consultas consumidas por un usuario en un mes (tabla {@code plan_usage}).
- * La clave es compuesta (usuario + mes): una fila por usuario y mes; el mes se
- * normaliza siempre a su primer día.
+ * Lookups used by a user in a given month ({@code plan_usage} table). Composite key
+ * (user + month), so one row per user per month. The month is always normalized to
+ * its first day.
  */
 @Entity
 @Table(name = "plan_usage")
 public class PlanUsage {
 
-    /** Clave compuesta (user_id, usage_month) — JPA exige una clase aparte para esto. */
+    /** Composite key (user_id, usage_month). JPA needs a separate class for it. */
     @Embeddable
     public record Key(
             @Column(name = "user_id") Long userId,
@@ -31,7 +31,7 @@ public class PlanUsage {
     @Column(name = "queries_used", nullable = false)
     private int queriesUsed;
 
-    /** Constructor vacío exigido por JPA; no usar directamente. */
+    /** No-arg constructor required by JPA, don't use directly. */
     protected PlanUsage() {}
 
     public PlanUsage(Long userId, LocalDate month) {

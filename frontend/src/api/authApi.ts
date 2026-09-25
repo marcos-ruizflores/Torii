@@ -2,7 +2,7 @@ import axios from 'axios'
 import { http } from './http'
 import type { AuthResponse, ProblemDetail, QuotaUsage, SavedSearch, User } from './types'
 
-/** Extrae el mensaje útil de un error del backend (ProblemDetail o texto plano). */
+/** Pulls the useful message out of a backend error (ProblemDetail or plain text). */
 function messageFrom(err: unknown, fallback: string): string {
   if (axios.isAxiosError(err) && err.response?.data) {
     const problem = err.response.data as ProblemDetail
@@ -29,25 +29,25 @@ export async function login(email: string, password: string): Promise<AuthRespon
   }
 }
 
-/** Perfil del dueño del token guardado; falla si el token caducó. */
+/** Profile of the stored token's owner. Fails if the token has expired. */
 export async function fetchMe(): Promise<User> {
   const { data } = await http.get<User>('/api/me')
   return data
 }
 
-/** Las últimas búsquedas del usuario autenticado (el backend admite hasta 50). */
+/** Latest searches of the logged in user (the backend allows up to 50). */
 export async function fetchMySearches(limit = 10): Promise<SavedSearch[]> {
   const { data } = await http.get<SavedSearch[]>('/api/me/searches', { params: { limit } })
   return data
 }
 
-/** Cuota del mes: cuántas consultas lleva gastadas el usuario y cuál es su límite. */
+/** This month's quota: how many lookups the user has used and their limit. */
 export async function fetchMyUsage(): Promise<QuotaUsage> {
   const { data } = await http.get<QuotaUsage>('/api/me/usage')
   return data
 }
 
-/** Cambia el plan de la cuenta (sin pagos todavía). Devuelve el perfil actualizado. */
+/** Changes the account plan (no payments yet). Returns the updated profile. */
 export async function changePlan(plan: User['plan']): Promise<User> {
   try {
     const { data } = await http.post<User>('/api/me/plan', { plan })

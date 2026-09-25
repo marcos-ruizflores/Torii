@@ -6,48 +6,48 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 import java.time.Duration;
 
 /**
- * Configuración de la caché de Torii, externalizada a {@code application.properties}
- * bajo el prefijo {@code torii.cache}.
+ * Cache settings, externalized to {@code application.properties} under the
+ * {@code torii.cache} prefix.
  *
- * <p>Antes, el tamaño de la caché y los TTLs estaban escritos a fuego en el código.
- * Sacarlos aquí permite ajustarlos sin recompilar (por entorno, por perfil, por
- * variable de entorno) y deja un único sitio donde ver y tocar todos esos números.
+ * <p>Cache size and TTLs used to be hardcoded. Having them here means they can be
+ * tuned without recompiling (per environment, profile or env var) and there's one
+ * single place to see and change all those numbers.
  *
- * <p>Es un {@code record} con enlace por constructor: Spring rellena cada campo
- * desde las propiedades y, si alguna falta, usa el {@link DefaultValue} indicado.
- * Por eso la aplicación funciona aunque no se configure nada.
+ * <p>Constructor-bound {@code record}: Spring fills each field from the properties
+ * and falls back to the {@link DefaultValue} when one is missing, so the app works
+ * even with no config at all.
  *
- * <p>Las duraciones se escriben con sufijo: {@code 7d}, {@code 24h}, {@code 1h},
- * {@code 10m}. Spring las convierte solo a {@link Duration}.
+ * <p>Durations use a suffix: {@code 7d}, {@code 24h}, {@code 1h}, {@code 10m}. Spring
+ * converts them to {@link Duration} on its own.
  */
 @ConfigurationProperties(prefix = "torii.cache")
 public record CacheProperties(
 
-        /** Máximo de entradas en caché; al superarlo, expulsa las menos usadas. */
+        /** Max number of cache entries. Least used ones get evicted past this. */
         @DefaultValue("50000") long maximumSize,
 
-        /** Política de caducidad variable según la cercanía del viaje. */
+        /** Expiry policy, depends on how soon the trip is. */
         @DefaultValue Ttl ttl
 ) {
 
     /**
-     * Tramos de TTL. {@code *ThresholdDays} son las fronteras en días hasta la salida;
-     * los otros campos, cuánto vive la entrada en cada tramo.
+     * TTL tiers. {@code *ThresholdDays} are the boundaries in days until departure,
+     * the other fields are how long an entry lives in each tier.
      */
     public record Ttl(
             @DefaultValue("60") int farThresholdDays,
             @DefaultValue("14") int mediumThresholdDays,
             @DefaultValue("2")  int nearThresholdDays,
 
-            @DefaultValue("7d")  Duration far,       // salida a > farThresholdDays
+            @DefaultValue("7d")  Duration far,       // departure > farThresholdDays away
             @DefaultValue("24h") Duration medium,    // >= mediumThresholdDays
             @DefaultValue("1h")  Duration near,      // >= nearThresholdDays
-            @DefaultValue("10m") Duration imminent   // < nearThresholdDays (o ya pasado)
+            @DefaultValue("10m") Duration imminent   // < nearThresholdDays (or already past)
     ) {}
 
     /**
-     * Instancia con todos los valores por defecto. Útil en tests, que no levantan el
-     * contexto de Spring y necesitan construir las propiedades a mano.
+     * Instance with every default value. Useful in tests that don't start the Spring
+     * context and need to build the properties by hand.
      */
     public static CacheProperties defaults() {
         return new CacheProperties(

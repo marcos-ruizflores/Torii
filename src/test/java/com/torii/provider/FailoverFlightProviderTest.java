@@ -16,9 +16,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Tests del motor de failover. Usan proveedores simulados que cuentan sus llamadas y
- * un reloj manipulable, para comprobar el comportamiento exacto de conmutación y
- * enfriamiento sin depender de ninguna API real.
+ * Failover tests. Uses fake providers that count their calls and a clock we can move
+ * by hand, to check the exact switching and cooldown behaviour without any real API.
  */
 class FailoverFlightProviderTest {
 
@@ -41,7 +40,7 @@ class FailoverFlightProviderTest {
 
         assertThat(result).hasSize(1);
         assertThat(primero.calls).isEqualTo(1);
-        assertThat(segundo.calls).isZero(); // ni se toca
+        assertThat(segundo.calls).isZero(); // never touched
     }
 
     @Test
@@ -65,11 +64,11 @@ class FailoverFlightProviderTest {
         var failover = new FailoverFlightProvider(List.of(agotado, responde),
                 fixedClock(), COOLDOWN);
 
-        // Dos búsquedas seguidas (simula dos de los cientos de pares de fechas).
+        // Two lookups in a row (stands in for two of the hundreds of date pairs).
         search(failover);
         search(failover);
 
-        // La primera lo intentó y lo aparcó; la segunda lo saltó directamente.
+        // The first one tried it and parked it, the second skipped it straight away.
         assertThat(agotado.calls).isEqualTo(1);
         assertThat(responde.calls).isEqualTo(2);
     }
@@ -81,11 +80,11 @@ class FailoverFlightProviderTest {
         MutableClock clock = new MutableClock(Instant.parse("2026-01-01T00:00:00Z"));
         var failover = new FailoverFlightProvider(List.of(agotado, responde), clock, COOLDOWN);
 
-        search(failover);                       // agota y aparca Amadeus
-        clock.advance(Duration.ofMinutes(6));   // pasa el cooldown de 5 min
-        search(failover);                       // debería reintentar Amadeus
+        search(failover);                       // exhausts and parks Amadeus
+        clock.advance(Duration.ofMinutes(6));   // past the 5 min cooldown
+        search(failover);                       // should retry Amadeus
 
-        assertThat(agotado.calls).isEqualTo(2); // se reintentó tras enfriarse
+        assertThat(agotado.calls).isEqualTo(2); // retried after the cooldown
     }
 
     @Test
@@ -100,13 +99,13 @@ class FailoverFlightProviderTest {
                 .hasMessageContaining("Ningún proveedor");
     }
 
-    // --- Proveedores simulados ---------------------------------------------------
+    // --- Fake providers ----------------------------------------------------------
 
     private static Clock fixedClock() {
         return Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC);
     }
 
-    /** Responde siempre con una oferta. */
+    /** Always answers with one offer. */
     private static class RespondingProvider implements FlightProvider {
         private final String name;
         int calls = 0;
@@ -127,7 +126,7 @@ class FailoverFlightProviderTest {
         }
     }
 
-    /** Siempre lanza "cuota agotada". */
+    /** Always throws "quota exceeded". */
     private static class QuotaExhaustedProvider implements FlightProvider {
         private final String name;
         int calls = 0;
@@ -148,7 +147,7 @@ class FailoverFlightProviderTest {
         }
     }
 
-    /** Siempre lanza un fallo temporal. */
+    /** Always throws a temporary failure. */
     private static class TransientFailProvider implements FlightProvider {
         private final String name;
         int calls = 0;
@@ -169,7 +168,7 @@ class FailoverFlightProviderTest {
         }
     }
 
-    /** Reloj cuyo instante podemos avanzar a mano, para probar el cooldown. */
+    /** Clock we can move forward by hand to test the cooldown. */
     private static class MutableClock extends Clock {
         private Instant instant;
 

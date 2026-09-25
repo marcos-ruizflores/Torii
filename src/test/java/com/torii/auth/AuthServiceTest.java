@@ -21,9 +21,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Tests de registro y login contra la H2 en memoria. Verifican que la contraseña
- * se guarda hasheada, que el email no se puede duplicar y que el login solo pasa
- * con las credenciales correctas.
+ * Sign up and login tests against in-memory H2. Checks the password is stored
+ * hashed, emails can't be duplicated and login only works with the right credentials.
  */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -56,7 +55,7 @@ class AuthServiceTest {
         assertThat(response.user().plan()).isEqualTo("FREE");
 
         UserAccount saved = users.findByEmail("marcos@test.com").orElseThrow();
-        // La contraseña NUNCA en claro: BCrypt produce hashes con prefijo $2...
+        // Password must NEVER be stored in plain text, BCrypt hashes start with $2...
         assertThat(saved.getPasswordHash()).isNotEqualTo("superclave123").startsWith("$2");
     }
 

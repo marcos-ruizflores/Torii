@@ -1,19 +1,19 @@
 import { http } from './http'
 
-// Histórico de precios de una ruta (mejor precio observado por día), servido por
-// el backend desde la base de datos (GET /api/price-history). Se alimenta solo:
-// cada búsqueda real registra su mejor precio del día. Las primeras veces la
-// serie estará casi vacía — el gráfico lo indica y anima a buscar.
+// Price history for a route (best price seen per day), served by the backend from
+// the database (GET /api/price-history). It fills itself: every real search records
+// its best price of the day. Early on the series will be almost empty, the chart
+// says so and nudges the user to search.
 
 export interface PricePoint {
-  /** Día en formato AAAA-MM-DD. */
+  /** Day as YYYY-MM-DD. */
   date: string
-  /** Mejor precio observado ese día. */
+  /** Best price seen that day. */
   price: number
   currency: string
 }
 
-/** Serie de los últimos `days` días para una ruta. */
+/** Last `days` days of data for a route. */
 export async function fetchPriceHistory(
   origin: string,
   destination: string,

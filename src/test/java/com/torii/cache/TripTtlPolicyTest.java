@@ -9,8 +9,8 @@ import java.time.LocalDate;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Tests de la política de TTL variable. Al ser lógica pura, se prueban sin Spring ni
- * caché: fijamos un "hoy" y comprobamos el TTL para distintas cercanías de salida.
+ * Tests for the variable TTL policy. It's pure logic, so no Spring or cache needed:
+ * pin "today" and check the TTL for departures at different distances.
  */
 class TripTtlPolicyTest {
 
@@ -19,7 +19,7 @@ class TripTtlPolicyTest {
 
     @Test
     void viajeMuyLejanoTtlLargo() {
-        // salida a 6 meses → 7 días
+        // departure 6 months out -> 7 days
         assertThat(policy.ttlFor(today.plusDays(180), today)).isEqualTo(Duration.ofDays(7));
     }
 
@@ -40,11 +40,11 @@ class TripTtlPolicyTest {
 
     @Test
     void enLosLimitesElTtlEsElDelTramoSuperior() {
-        // exactamente 60 días → todavía no supera 60, cae en el tramo de 24h
+        // exactly 60 days -> not above 60 yet, falls in the 24h tier
         assertThat(policy.ttlFor(today.plusDays(60), today)).isEqualTo(Duration.ofHours(24));
-        // exactamente 61 → ya es "muy lejano"
+        // exactly 61 -> now it's "far"
         assertThat(policy.ttlFor(today.plusDays(61), today)).isEqualTo(Duration.ofDays(7));
-        // exactamente 14 → tramo de 24h
+        // exactly 14 -> 24h tier
         assertThat(policy.ttlFor(today.plusDays(14), today)).isEqualTo(Duration.ofHours(24));
     }
 }

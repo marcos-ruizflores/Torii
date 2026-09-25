@@ -1,31 +1,31 @@
 #!/usr/bin/env bash
 #
-# Torii — buscador de ofertas en modo TEST (interactivo).
+# Torii - interactive offer search for manual testing.
 #
-# Te pregunta los datos de la búsqueda igual que haría la futura interfaz gráfica,
-# llama a la API (POST /api/search) y muestra las ofertas en una tabla. Pulsa Enter
-# en cualquier pregunta para aceptar el valor por defecto que aparece entre corchetes.
+# Asks for the search parameters, calls the API (POST /api/search) and prints the
+# offers as a table. Press Enter on any question to accept the default shown in
+# brackets.
 #
-# Uso:
+# Usage:
 #   ./scripts/buscar-oferta.sh
 #
-# Variables opcionales:
-#   TORII_URL=http://localhost:8080   (por si cambias el puerto/host)
+# Optional env vars:
+#   TORII_URL=http://localhost:8080   (if you changed the port/host)
 
 set -euo pipefail
 
 API="${TORII_URL:-http://localhost:8080}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# --- 1) Comprobar que la aplicación está levantada -------------------------------
+# --- 1) Check the app is running -------------------------------------------------
 if ! curl -s -o /dev/null --max-time 2 "$API/api/cache/stats"; then
   echo "⚠️  Torii no responde en $API"
   echo "    Arráncalo en otra terminal con:  ./mvnw spring-boot:run"
   exit 1
 fi
 
-# --- 2) Pequeña ayuda para preguntar con valor por defecto -----------------------
-# El prompt (read -rp) se escribe en stderr, así que $(...) solo captura la respuesta.
+# --- 2) Small helper to ask with a default value ---------------------------------
+# read -rp writes the prompt to stderr, so $(...) only captures the answer.
 ask() {
   local prompt="$1" default="$2" answer
   read -rp "$prompt [$default]: " answer
@@ -45,7 +45,7 @@ variability=$(ask "Variabilidad (+días a explorar)" "3")
 maxStops=$(ask    "Máximo de escalas (0-3)" "1")
 topN=$(ask        "¿Cuántas mejores ofertas mostrar?" "5")
 
-# --- 3) Construir el cuerpo JSON de la petición ----------------------------------
+# --- 3) Build the JSON request body ----------------------------------------------
 payload=$(cat <<JSON
 {
   "origin": "$origin",
@@ -64,12 +64,12 @@ echo
 echo "→ Buscando $origin → $destination, estancia $baseDuration-$((baseDuration+variability)) días entre $rangeStart y $rangeEnd ..."
 echo
 
-# --- 4) Llamar a la API y separar cuerpo de código HTTP --------------------------
+# --- 4) Call the API and split body from HTTP status -----------------------------
 response=$(curl -s -w $'\n%{http_code}' -X POST "$API/api/search" \
   -H "Content-Type: application/json" \
   -d "$payload")
 http_code=$(echo "$response" | tail -n1)
 body=$(echo "$response" | sed '$d')
 
-# --- 5) Formatear el resultado de forma legible ----------------------------------
+# --- 5) Print the result in a readable way ---------------------------------------
 echo "$body" | python3 "$SCRIPT_DIR/_formatear_resultado.py" "$http_code"

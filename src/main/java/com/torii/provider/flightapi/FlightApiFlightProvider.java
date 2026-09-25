@@ -22,25 +22,25 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * Proveedor FlightAPI.io (endpoint {@code /roundtrip}).
+ * FlightAPI.io provider ({@code /roundtrip} endpoint).
  *
- * <p>Encaja en el motor de failover igual que Amadeus y SerpApi: implementa
- * {@link FlightProvider} y traduce sus errores a nuestras dos excepciones (cuota
- * agotada vs. fallo temporal). Peculiaridades de esta API:
+ * <p>Plugs into the failover chain like Amadeus and SerpApi: implements
+ * {@link FlightProvider} and maps its errors to our two exceptions (quota exceeded
+ * vs. temporary failure). Quirks of this API:
  * <ul>
- *   <li>Todos los parámetros van en el <b>path</b>, incluida la API key:
- *       {@code /roundtrip/<key>/<origen>/<destino>/<ida>/<vuelta>/1/0/0/Economy/EUR}.
- *       Por eso hay que tener cuidado de no volcar la URL en los logs.</li>
- *   <li>Cada petición cuesta <b>2 créditos</b> del plan.</li>
- *   <li>No tiene parámetro de escalas máximas, así que {@code maxStops} se filtra
- *       aquí, en cliente, sobre el tramo de ida.</li>
+ *   <li>Every parameter goes in the <b>path</b>, API key included:
+ *       {@code /roundtrip/<key>/<origin>/<destination>/<out>/<back>/1/0/0/Economy/EUR}.
+ *       So be careful never to dump the URL into the logs.</li>
+ *   <li>Each request costs <b>2 credits</b> of the plan.</li>
+ *   <li>There's no max stops parameter, so {@code maxStops} is filtered here on the
+ *       client side, based on the outbound leg.</li>
  * </ul>
  */
 public class FlightApiFlightProvider implements FlightProvider {
 
     private static final Logger log = LoggerFactory.getLogger(FlightApiFlightProvider.class);
 
-    /** Los deep-links de la respuesta son rutas relativas de Skyscanner. */
+    /** Deep links in the response are relative Skyscanner paths. */
     private static final String DEEPLINK_BASE = "https://www.skyscanner.net";
 
     private final RestClient restClient;
@@ -58,7 +58,7 @@ public class FlightApiFlightProvider implements FlightProvider {
 
         try {
             FlightApiRoundTripResponse response = restClient.get()
-                    // Esquema de la API: todo por path, con 1 adulto, 0 niños, 0 bebés.
+                    // Everything goes in the path: 1 adult, 0 children, 0 infants.
                     .uri("/roundtrip/{key}/{origin}/{destination}/{depart}/{return}/1/0/0/{cabin}/{currency}",
                             props.apiKey(), origin, destination, departDate, returnDate,
                             props.cabinClass(), props.currency())
@@ -70,8 +70,8 @@ public class FlightApiFlightProvider implements FlightProvider {
         } catch (HttpClientErrorException.TooManyRequests e) {
             throw new ProviderQuotaExceededException("FlightAPI ha agotado su ritmo (429)", e);
         } catch (HttpClientErrorException.Forbidden e) {
-            // FlightAPI responde 4xx cuando el plan se queda sin créditos; tratamos el
-            // 403 como cuota agotada para que el failover lo aparque con cooldown.
+            // FlightAPI answers with a 4xx when the plan runs out of credits. Treat 403
+            // as quota exceeded so the failover parks it for the cooldown.
             throw new ProviderQuotaExceededException("FlightAPI sin créditos o key inválida (403)", e);
         } catch (RestClientException e) {
             throw new FlightProviderException("Error consultando FlightAPI: " + sanitized(e.getMessage()), e);
@@ -84,7 +84,7 @@ public class FlightApiFlightProvider implements FlightProvider {
             return List.of();
         }
 
-        // Índices id → objeto para resolver las referencias del modelo normalizado.
+        // id -> object lookups to resolve the references in the normalized model.
         Map<String, FlightApiRoundTripResponse.Leg> legsById = indexBy(
                 response.legs(), FlightApiRoundTripResponse.Leg::id);
         Map<Long, FlightApiRoundTripResponse.Carrier> carriersById = indexBy(
@@ -96,8 +96,8 @@ public class FlightApiFlightProvider implements FlightProvider {
                 .map(it -> toFlightOffer(it, legsById, carriersById, placesById, departDate, returnDate))
                 .filter(Objects::nonNull)
                 .filter(offer -> offer.stops() <= maxStops)
-                // La API no garantiza orden por precio; ordenamos ANTES de recortar
-                // para que el top-N sea de verdad el más barato.
+                // The API doesn't guarantee price order. Sort BEFORE limiting so the
+                // top N really are the cheapest.
                 .sorted(Comparator.comparing(FlightOffer::price))
                 .limit(props.maxResults())
                 .toList();
@@ -111,11 +111,11 @@ public class FlightApiFlightProvider implements FlightProvider {
 
         BigDecimal price = extractPrice(itinerary);
         if (price == null) {
-            return null; // sin precio no hay oferta que comparar
+            return null; // no price, nothing to compare
         }
 
-        // El primer leg_id es el tramo de IDA (aerolínea, hora y escalas) y el
-        // último el de VUELTA (su hora de salida).
+        // First leg_id is the OUTBOUND leg (airline, time and stops), the last one is
+        // the RETURN leg (we only need its departure time).
         List<String> legIds = itinerary.legIds() != null ? itinerary.legIds() : List.of();
         FlightApiRoundTripResponse.Leg outbound = !legIds.isEmpty() ? legsById.get(legIds.get(0)) : null;
         FlightApiRoundTripResponse.Leg inbound = legIds.size() > 1
@@ -134,7 +134,7 @@ public class FlightApiFlightProvider implements FlightProvider {
                 departureTime, returnDepartureTime, stopovers, extractBookingUrl(itinerary));
     }
 
-    /** Precio más barato del itinerario, con fallback al mínimo de sus opciones. */
+    /** Cheapest price of the itinerary, falling back to the lowest pricing option. */
     private BigDecimal extractPrice(FlightApiRoundTripResponse.Itinerary itinerary) {
         if (itinerary.cheapestPrice() != null && itinerary.cheapestPrice().amount() != null) {
             return BigDecimal.valueOf(itinerary.cheapestPrice().amount());
@@ -161,7 +161,7 @@ public class FlightApiFlightProvider implements FlightProvider {
         return (carrier != null && carrier.name() != null) ? carrier.name() : "??";
     }
 
-    /** El formato del leg es ISO ("2026-07-01T10:45:00"): parse directo. */
+    /** Leg times are ISO ("2026-07-01T10:45:00"), so they parse directly. */
     private LocalTime extractDepartureTime(FlightApiRoundTripResponse.Leg leg) {
         if (leg == null || leg.departure() == null) {
             return null;
@@ -169,11 +169,11 @@ public class FlightApiFlightProvider implements FlightProvider {
         try {
             return LocalDateTime.parse(leg.departure()).toLocalTime();
         } catch (RuntimeException e) {
-            return null; // si el formato cambia, mejor null que romper la búsqueda
+            return null; // if the format ever changes, null is better than breaking the search
         }
     }
 
-    /** Códigos IATA de las escalas de la ida, resolviendo los IDs contra {@code places}. */
+    /** IATA codes of the outbound stops, resolving the IDs against {@code places}. */
     private List<String> extractStopovers(FlightApiRoundTripResponse.Leg leg,
                                           Map<Long, FlightApiRoundTripResponse.Place> placesById) {
         if (leg == null || leg.stopIds() == null) {
@@ -188,7 +188,7 @@ public class FlightApiFlightProvider implements FlightProvider {
                 .toList();
     }
 
-    /** Primer deep-link disponible, convertido en URL absoluta de Skyscanner. */
+    /** First available deep link, turned into an absolute Skyscanner URL. */
     private String extractBookingUrl(FlightApiRoundTripResponse.Itinerary itinerary) {
         if (itinerary.pricingOptions() != null) {
             for (FlightApiRoundTripResponse.PricingOption option : itinerary.pricingOptions()) {
@@ -204,8 +204,8 @@ public class FlightApiFlightProvider implements FlightProvider {
     }
 
     /**
-     * Oculta la API key en los mensajes de error: como viaja en el path, cualquier
-     * excepción que incluya la URL la dejaría escrita en los logs.
+     * Masks the API key in error messages. Since it's part of the path, any exception
+     * that includes the URL would otherwise leak it into the logs.
      */
     private String sanitized(String message) {
         if (message == null || props.apiKey().isBlank()) {

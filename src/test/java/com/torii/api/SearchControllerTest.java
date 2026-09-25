@@ -26,15 +26,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Tests de la capa web del buscador. Cargan SOLO el controlador (más la validación,
- * el ApiExceptionHandler y la serialización JSON); el {@link SearchService} se
- * sustituye por un mock. Así se prueba el "contrato HTTP" — deserialización,
- * validación, códigos de estado y forma del JSON — sin levantar la app entera ni
- * ejecutar el algoritmo.
+ * Web layer tests for search. Loads ONLY the controller (plus validation, the
+ * ApiExceptionHandler and JSON serialization), with {@link SearchService} mocked.
+ * That covers the HTTP contract (deserialization, validation, status codes, JSON
+ * shape) without starting the whole app or running the algorithm.
  */
 @WebMvcTest(SearchController.class)
-// La cadena de seguridad real: /api/search es público (con o sin token) y el CORS
-// lo maneja el filtro de Security con el bean de CorsConfig.
+// Real security chain: /api/search is public (with or without a token) and CORS is
+// handled by the Security filter using the CorsConfig bean.
 @Import({SecurityConfig.class, CorsConfig.class})
 class SearchControllerTest {
 
@@ -44,8 +43,8 @@ class SearchControllerTest {
     @MockitoBean
     private SearchService searchService;
 
-    // Fechas relativas a "hoy" para que el test no caduque con el paso del tiempo
-    // (con fechas fijas, la validación "debe ser futura" acababa rechazándolas).
+    // Dates relative to "today" so the test doesn't expire over time (with fixed
+    // dates the "must be in the future" check ended up rejecting them).
     private static final LocalDate RANGE_START = LocalDate.now().plusMonths(1);
     private static final LocalDate RANGE_END = LocalDate.now().plusMonths(4);
 
@@ -103,7 +102,7 @@ class SearchControllerTest {
                   "maxStops": 1,
                   "topN": 5
                 }
-                """.formatted(RANGE_START, RANGE_END); // falta "origin"
+                """.formatted(RANGE_START, RANGE_END); // "origin" is missing
 
         mvc.perform(post("/api/search")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -114,7 +113,7 @@ class SearchControllerTest {
 
     @Test
     void rangoMasCortoQueLaEstanciaDevuelve400() throws Exception {
-        // 9 días de rango pero estancia de hasta 17 → falla la validación cruzada de toDomain().
+        // 9 day range but stays up to 17 days -> fails the cross check in toDomain().
         String body = VALID_BODY.replace(RANGE_END.toString(), RANGE_START.plusDays(9).toString());
 
         mvc.perform(post("/api/search")
@@ -124,12 +123,12 @@ class SearchControllerTest {
                 .andExpect(jsonPath("$.detail", containsString("demasiado corto")));
     }
 
-    // --- CORS (frontend desplegado en otro origen; ver CorsConfig) ---
+    // --- CORS (frontend deployed on another origin, see CorsConfig) ---
 
     @Test
     void preflightDesdeOrigenPermitidoDevuelveCabecerasCors() throws Exception {
-        // El navegador manda este OPTIONS antes del POST real cuando el frontend
-        // vive en otro origen. Sin la cabecera Allow-Origin, bloquearía la llamada.
+        // The browser sends this OPTIONS before the real POST when the frontend lives
+        // on another origin. Without the Allow-Origin header it would block the call.
         mvc.perform(options("/api/search")
                         .header("Origin", "http://localhost:5173")
                         .header("Access-Control-Request-Method", "POST"))

@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router'
 import { Button } from '@/components/base/buttons/button'
 
 /**
- * Página 404 al estilo de las "404 sections" de Untitled UI: etiqueta de error,
- * titular grande, texto de apoyo y acciones para volver a terreno conocido.
+ * 404 page based on Untitled UI's "404 sections": error label, big heading,
+ * supporting text and links back to somewhere useful.
  */
 export function NotFound() {
   const navigate = useNavigate()

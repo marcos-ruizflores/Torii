@@ -10,10 +10,10 @@ import { NotFound } from './pages/NotFound.tsx'
 import { Pricing } from './pages/Pricing.tsx'
 import { SignUp } from './pages/SignUp.tsx'
 
-// Estilos globales: Tailwind + theme de Untitled UI (colores, tipografía, tokens).
+// Global styles: Tailwind + Untitled UI theme (colors, typography, tokens).
 import '@/styles/globals.css'
 
-// Cliente de TanStack Query: gestiona el estado de las llamadas a la API.
+// TanStack Query client, handles the state of API calls.
 const queryClient = new QueryClient()
 
 createRoot(document.getElementById('root')!).render(
@@ -27,7 +27,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/signup" element={<SignUp />} />
             <Route path="/planes" element={<Pricing />} />
             <Route path="/mis-busquedas" element={<MySearches />} />
-            {/* Cualquier ruta desconocida cae en la página 404. */}
+            {/* Any unknown route falls through to the 404 page. */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

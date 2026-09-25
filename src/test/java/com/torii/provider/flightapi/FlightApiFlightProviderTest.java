@@ -24,17 +24,17 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 /**
- * Test del proveedor FlightAPI.io contra un servidor HTTP simulado. Verifica que el
- * modelo normalizado (itineraries → legs → carriers/places por IDs) se resuelve bien
- * a {@link FlightOffer}, que el resultado sale ordenado por precio, que maxStops se
- * filtra en cliente y que un 429 se traduce en cuota agotada para el failover.
+ * FlightAPI.io provider test against a mock HTTP server. Checks that the normalized
+ * model (itineraries -> legs -> carriers/places by ID) resolves correctly to
+ * {@link FlightOffer}, results come sorted by price, maxStops is filtered client side
+ * and a 429 becomes quota exceeded for the failover.
  */
 class FlightApiFlightProviderTest {
 
     /**
-     * Respuesta con 2 itinerarios: uno directo de Iberia (640€) y uno más barato de
-     * Qatar con escala en DOH (520.5€). Vienen DESORDENADOS a propósito para
-     * comprobar que el proveedor ordena por precio.
+     * Response with 2 itineraries: a direct Iberia one (640 EUR) and a cheaper Qatar
+     * one via DOH (520.5 EUR). They're OUT OF ORDER on purpose to check the provider
+     * sorts by price.
      */
     private static final String SAMPLE_JSON = """
             {
@@ -102,12 +102,12 @@ class FlightApiFlightProviderTest {
 
         assertThat(offers).hasSize(2);
 
-        // El más barato primero, aunque en el JSON venía el segundo.
+        // Cheapest first, even though it was second in the JSON.
         FlightOffer cheapest = offers.get(0);
-        assertThat(cheapest.airline()).isEqualTo("Qatar Airways"); // carrier -32 resuelto
+        assertThat(cheapest.airline()).isEqualTo("Qatar Airways"); // carrier -32 resolved
         assertThat(cheapest.price()).isEqualByComparingTo("520.5");
         assertThat(cheapest.stops()).isEqualTo(1);
-        assertThat(cheapest.stopovers()).containsExactly("DOH"); // place 9596 resuelto
+        assertThat(cheapest.stopovers()).containsExactly("DOH"); // place 9596 resolved
         assertThat(cheapest.departureTime()).isEqualTo(LocalTime.of(6, 30));
         assertThat(cheapest.returnDepartureTime()).isEqualTo(LocalTime.of(21, 10)); // LEG-BACK-QR
         assertThat(cheapest.departDate()).isEqualTo(LocalDate.of(2026, 7, 1));
@@ -131,7 +131,7 @@ class FlightApiFlightProviderTest {
         server.expect(requestTo(containsString("/roundtrip/TESTKEY/BCN/NRT")))
                 .andRespond(withSuccess(SAMPLE_JSON, APPLICATION_JSON));
 
-        // maxStops=0: la oferta de Qatar (1 escala) debe quedar fuera.
+        // maxStops=0: the Qatar offer (1 stop) has to be filtered out.
         List<FlightOffer> offers = provider.searchOffers(
                 "BCN", "NRT", LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 15), 0);
 

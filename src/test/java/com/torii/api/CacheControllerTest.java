@@ -17,13 +17,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Test de la capa web del endpoint de estadísticas de caché. Mockea el
- * {@link CachingFlightProvider} para comprobar que sus métricas se exponen bien en
- * el JSON de {@code GET /api/cache/stats}.
+ * Web layer test for the cache stats endpoint. Mocks {@link CachingFlightProvider}
+ * to check its metrics come out right in the JSON of {@code GET /api/cache/stats}.
  */
 @WebMvcTest(CacheController.class)
-// La cadena de seguridad real (con /api/cache público) en vez de la de por defecto,
-// que exigiría autenticación en todo.
+// Use the real security chain (where /api/cache is public) instead of the default
+// one, which would require auth everywhere.
 @Import({SecurityConfig.class, CorsConfig.class})
 class CacheControllerTest {
 

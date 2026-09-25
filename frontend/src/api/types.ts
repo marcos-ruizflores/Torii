@@ -1,24 +1,23 @@
-// Tipos que reflejan el contrato JSON del backend (ver examples/README.md).
-// Tenerlos aquí, en un único sitio, hace que TypeScript nos avise si el frontend y
-// el backend dejan de cuadrar.
+// Types mirroring the backend JSON contract (see examples/README.md). Keeping them
+// in one place means TypeScript complains if frontend and backend drift apart.
 
 export type SearchPrecision = 'FAST' | 'BALANCED' | 'EXHAUSTIVE'
 
-/** Cuerpo de POST /api/search. */
+/** Body of POST /api/search. */
 export interface SearchRequest {
   origin: string
   destination: string
-  rangeStart: string // AAAA-MM-DD
-  rangeEnd: string // AAAA-MM-DD
+  rangeStart: string // YYYY-MM-DD
+  rangeEnd: string // YYYY-MM-DD
   baseDuration: number
   variability: number
   maxStops: number
   topN: number
   precision?: SearchPrecision
-  maxPrice?: number // presupuesto máximo opcional (€); omitir = sin límite
+  maxPrice?: number // optional budget in EUR, leave out for no limit
 }
 
-/** Cada oferta del array que devuelve POST /api/search. */
+/** One offer from the array returned by POST /api/search. */
 export interface FlightOffer {
   airline: string
   price: number
@@ -26,13 +25,13 @@ export interface FlightOffer {
   stops: number
   departDate: string
   returnDate: string
-  departureTime: string | null // "HH:mm:ss" o null si la fuente no la da
-  returnDepartureTime: string | null // hora de salida de la vuelta (null en SerpApi)
-  stopovers: string[] // códigos IATA de los aeropuertos de escala
+  departureTime: string | null // "HH:mm:ss", or null if the source doesn't provide it
+  returnDepartureTime: string | null // return leg departure time (null with SerpApi)
+  stopovers: string[] // IATA codes of the stopover airports
   bookingUrl: string
 }
 
-/** Forma del error 400 (ProblemDetail, RFC 7807). */
+/** Shape of a 400 error (ProblemDetail, RFC 7807). */
 export interface ProblemDetail {
   title: string
   status: number
@@ -40,7 +39,7 @@ export interface ProblemDetail {
   instance: string
 }
 
-/** Perfil público del usuario autenticado (lo devuelven login/signup y /api/me). */
+/** Public profile of the logged in user (returned by login/signup and /api/me). */
 export interface User {
   id: number
   name: string
@@ -48,13 +47,13 @@ export interface User {
   plan: 'FREE' | 'PRO' | 'BUSINESS'
 }
 
-/** Respuesta de POST /api/auth/login y /api/auth/signup. */
+/** Response of POST /api/auth/login and /api/auth/signup. */
 export interface AuthResponse {
   token: string
   user: User
 }
 
-/** Cuota del mes, de GET /api/me/usage. limit null = plan ilimitado. */
+/** Monthly quota from GET /api/me/usage. A null limit means unlimited. */
 export interface QuotaUsage {
   plan: string
   limit: number | null
@@ -62,7 +61,7 @@ export interface QuotaUsage {
   month: string
 }
 
-/** Una búsqueda guardada, de GET /api/me/searches. Permite repetirla con un clic. */
+/** A saved search from GET /api/me/searches, can be repeated with one click. */
 export interface SavedSearch {
   id: number
   origin: string

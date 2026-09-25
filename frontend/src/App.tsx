@@ -20,10 +20,10 @@ export default function App() {
   const queryClient = useQueryClient()
   const { user, logout } = useAuth()
   const search = useSearch()
-  // Guardamos la ruta de la última búsqueda para el mapa y el histórico de precios.
+  // Keep the route of the last search for the map and the price history.
   const [route, setRoute] = useState<{ origin: string; destination: string } | null>(null)
 
-  // Cuota del mes del usuario (para el contador de la cabecera).
+  // User's monthly quota (for the counter in the header).
   const usage = useQuery({
     queryKey: ['my-usage'],
     queryFn: fetchMyUsage,
@@ -33,18 +33,18 @@ export default function App() {
   function handleSearch(req: SearchRequest) {
     setRoute({ origin: req.origin, destination: req.destination })
     search.mutate(req, {
-      // La búsqueda recién hecha debe aparecer en el historial y en el contador.
+      // The search we just ran should show up in the history and the counter.
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['my-searches'] })
         queryClient.invalidateQueries({ queryKey: ['my-usage'] })
       },
-      // Un 429 de cuota también refresca el contador (se muestra en el error).
+      // A quota 429 also refreshes the counter (shown in the error).
       onError: () => queryClient.invalidateQueries({ queryKey: ['my-usage'] }),
     })
   }
 
-  // "Repetir" desde /mis-busquedas llega como state de navegación: la ejecutamos
-  // al montar y limpiamos el state para no repetirla con cada recarga.
+  // "Repeat" from /mis-busquedas arrives as navigation state: run it on mount and
+  // clear the state so it doesn't run again on every reload.
   useEffect(() => {
     const repeat = (location.state as { repeat?: SearchRequest } | null)?.repeat
     if (repeat) {
@@ -109,7 +109,7 @@ export default function App() {
 
         <SearchForm onSearch={handleSearch} loading={search.isPending} />
 
-        {/* Solo con sesión iniciada: las búsquedas anónimas no tienen historial. */}
+        {/* Logged in users only, anonymous searches have no history. */}
         {user && <RecentSearches onRepeat={handleSearch} />}
 
         {route && <RouteMap origin={route.origin} destination={route.destination} />}

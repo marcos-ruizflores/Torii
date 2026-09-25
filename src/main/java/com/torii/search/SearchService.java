@@ -14,10 +14,10 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- * Orquestador de búsquedas: ejecuta el algoritmo y registra los "efectos
- * secundarios" de cada búsqueda — el histórico de precios de la ruta y el
- * historial de búsquedas (anónimo o del usuario autenticado). El controlador REST
- * nunca habla con el algoritmo directamente, solo con este servicio.
+ * Search orchestration: runs the algorithm and takes care of the side effects of each
+ * search, i.e. the route's price history and the search history (anonymous or for
+ * the logged in user). The REST controller never talks to the algorithm directly,
+ * only to this service.
  */
 @Service
 public class SearchService {
@@ -38,19 +38,19 @@ public class SearchService {
     }
 
     /**
-     * @param userId id del usuario autenticado, o {@code null} si la búsqueda es anónima
+     * @param userId authenticated user id, or {@code null} for anonymous searches
      */
     public List<FlightOffer> search(SearchRequest request, @Nullable Long userId) {
-        // La cuota se comprueba y descuenta ANTES de trabajar: si no queda, se
-        // rechaza con 429 sin gastar ni una llamada a las APIs externas. Esto NO va
-        // en el try/catch de abajo: la cuota es una regla de negocio, no un extra.
+        // Quota is checked and consumed BEFORE doing any work: if there's none left we
+        // reject with a 429 without spending a single external call. This does NOT
+        // go in the try/catch below, quota is a business rule, not a nice-to-have.
         if (userId != null) {
             quota.consume(userId, engine.countQueries(request));
         }
 
         List<FlightOffer> offers = engine.findBestOffers(request);
 
-        // Los registros son extras: si la BD fallara, la búsqueda debe responder igual.
+        // Recording is best effort: if the DB is down the search should still answer.
         try {
             priceHistory.recordObservation(request.origin(), request.destination(), offers);
             searchHistory.record(request, userId, engine.countQueries(request));

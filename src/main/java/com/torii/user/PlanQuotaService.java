@@ -9,13 +9,13 @@ import java.time.Clock;
 import java.time.LocalDate;
 
 /**
- * Cuotas mensuales por plan: la pieza que convierte los planes de la página
- * /planes en una regla real.
+ * Monthly quotas per plan. This is what turns the plans on the /planes page into an
+ * actual rule.
  *
- * <p>ANTES de ejecutar una búsqueda se llama a {@link #consume}: si al usuario no
- * le quedan consultas este mes, se rechaza con 429 (y no se gasta ni una llamada a
- * las APIs externas). Las búsquedas anónimas no pasan por aquí — no hay identidad
- * a la que contar (limitarlas por IP es una mejora futura).
+ * <p>{@link #consume} is called BEFORE running a search: if the user has no lookups
+ * left this month it's rejected with a 429, without spending a single external API
+ * call. Anonymous searches skip this since there's no identity to count against
+ * (rate limiting by IP is a TODO).
  */
 @Service
 public class PlanQuotaService {
@@ -30,13 +30,13 @@ public class PlanQuotaService {
         this.clock = clock;
     }
 
-    /** Estado de cuota del usuario este mes, para /api/me/usage y el frontend. */
+    /** User's quota status for this month, used by /api/me/usage and the frontend. */
     public record Usage(String plan, Integer limit, int used, LocalDate month) {}
 
     /**
-     * Comprueba y descuenta {@code queries} consultas de la cuota del mes.
+     * Checks and subtracts {@code queries} lookups from this month's quota.
      *
-     * @throws ResponseStatusException 429 si el plan no tiene cuota suficiente
+     * @throws ResponseStatusException 429 if the plan doesn't have enough quota left
      */
     @Transactional
     public void consume(Long userId, int queries) {

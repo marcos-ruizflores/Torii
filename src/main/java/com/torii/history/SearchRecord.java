@@ -13,9 +13,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 /**
- * Una búsqueda guardada (tabla {@code searches}): los parámetros que pidió el
- * usuario y cuántas consultas costó. {@code userId} es null en las búsquedas
- * anónimas (sin sesión iniciada).
+ * A stored search ({@code searches} table): what the user asked for and how many
+ * lookups it cost. {@code userId} is null for anonymous searches (not logged in).
  */
 @Entity
 @Table(name = "searches")
@@ -64,7 +63,7 @@ public class SearchRecord {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    /** Constructor vacío exigido por JPA; no usar directamente. */
+    /** No-arg constructor required by JPA, don't use directly. */
     protected SearchRecord() {}
 
     public SearchRecord(Long userId, SearchRequest request, int queriesUsed) {

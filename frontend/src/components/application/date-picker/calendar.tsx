@@ -22,8 +22,8 @@ export const CalendarContextProvider = ({ children }: PropsWithChildren) => {
     const [value, setValue] = useState<DateValue | null>(null);
     const [focusedValue, onFocusChange] = useState<DateValue | undefined>();
 
-    // Los tipos de react-aria admiten selección múltiple en onChange; este calendario
-    // solo maneja fechas simples, de ahí el adaptador.
+    // react-aria's onChange types allow multiple selection, but this calendar only
+    // deals with single dates, hence the adapter.
     const onChange = (newValue: DateValue | readonly DateValue[]) => {
         setValue(Array.isArray(newValue) ? ((newValue[0] as DateValue) ?? null) : (newValue as DateValue));
     };

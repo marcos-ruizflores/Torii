@@ -21,7 +21,7 @@ interface Props {
   destination: string
 }
 
-/** "AAAA-MM-DD" → "12 sep" para el eje X. */
+/** "YYYY-MM-DD" -> "12 sep" for the X axis. */
 function shortDate(iso: string): string {
   return new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
 }
@@ -30,7 +30,7 @@ function euros(value: number): string {
   return value.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })
 }
 
-/** Estadísticas del período que alimentan la cabecera del gráfico. */
+/** Stats for the selected period, shown in the chart header. */
 function computeStats(points: PricePoint[]) {
   const prices = points.map((p) => p.price)
   const min = Math.min(...prices)
@@ -38,15 +38,15 @@ function computeStats(points: PricePoint[]) {
   const avg = prices.reduce((a, b) => a + b, 0) / prices.length
   const current = prices[prices.length - 1]
   const minPoint = points.find((p) => p.price === min)!
-  // Cuánto está el precio de HOY por encima/debajo de la media del período.
+  // How far TODAY's price is above/below the period average.
   const deltaPct = ((current - avg) / avg) * 100
   return { min, max, avg, current, minPoint, deltaPct }
 }
 
 /**
- * Evolución del mejor precio de la ruta en los últimos 7/30 días, con datos REALES
- * de la base de datos: cada búsqueda registra su mejor precio del día, así que la
- * serie crece sola con el uso de Torii.
+ * Best price for the route over the last 7/30 days, using REAL data from the
+ * database. Every search records its best price of the day, so the series grows on
+ * its own as Torii gets used.
  */
 export function PriceHistoryChart({ origin, destination }: Props) {
   const [days, setDays] = useState<7 | 30>(30)
@@ -61,7 +61,7 @@ export function PriceHistoryChart({ origin, destination }: Props) {
 
   return (
     <section className="rounded-xl bg-primary p-6 shadow-xs ring-1 ring-secondary">
-      {/* Cabecera: título + selector de período */}
+      {/* Header: title + period selector */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <h2 className="text-lg font-semibold text-primary">
           Histórico de precios {origin} → {destination}
@@ -76,7 +76,7 @@ export function PriceHistoryChart({ origin, destination }: Props) {
         </div>
       </div>
 
-      {/* Resumen del período: precio actual grande + tendencia + mínimo/media */}
+      {/* Period summary: current price, trend, min/avg */}
       {stats && (
         <div className="mt-4 mb-6 flex flex-wrap items-end gap-x-8 gap-y-3">
           <div className="flex flex-col gap-1">
@@ -113,7 +113,7 @@ export function PriceHistoryChart({ origin, destination }: Props) {
         </div>
       )}
 
-      {/* Serie corta o vacía: el histórico se construye buscando. */}
+      {/* Short or empty series, history builds up as people search. */}
       {history.isSuccess && history.data.length < 2 && (
         <div className="flex flex-col items-center gap-1 rounded-lg bg-secondary px-4 py-10 text-center">
           <p className="text-sm font-medium text-secondary">
@@ -159,7 +159,7 @@ export function PriceHistoryChart({ origin, destination }: Props) {
               labelFormatter={(label) => shortDate(String(label))}
               cursor={{ stroke: 'var(--color-border-secondary)' }}
             />
-            {/* Suelo del período: el precio a cazar. */}
+            {/* Period low: the price to beat. */}
             <ReferenceLine
               y={stats.min}
               stroke="var(--color-success-500)"

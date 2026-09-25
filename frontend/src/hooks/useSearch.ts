@@ -3,12 +3,11 @@ import { searchOffers } from '../api/searchApi'
 import type { FlightOffer, SearchRequest } from '../api/types'
 
 /**
- * Encapsula la búsqueda como una "mutación" de TanStack Query.
+ * Wraps the search as a TanStack Query mutation.
  *
- * Usamos useMutation (y no useQuery) porque la búsqueda se dispara por una acción
- * del usuario —pulsar "Buscar"— y no automáticamente al cargar. A cambio nos da
- * gratis los estados isPending / isError / data, que la UI usa para mostrar el
- * spinner, el error o la tabla.
+ * useMutation instead of useQuery because the search is triggered by the user
+ * clicking "Search", not automatically on load. We still get isPending / isError /
+ * data for free, which the UI uses for the spinner, the error and the results.
  */
 export function useSearch() {
   return useMutation<FlightOffer[], Error, SearchRequest>({

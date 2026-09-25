@@ -11,13 +11,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * Una fila de la tabla {@code price_history}: el mejor precio observado un día
- * concreto para una ruta.
+ * A row in {@code price_history}: the best price seen for a route on a given day.
  *
- * <p>Nota de diseño: las entidades JPA son clases mutables con constructor vacío
- * (lo exige Hibernate), a diferencia de nuestros records de dominio. Por eso esta
- * clase vive en su propio paquete y NO se expone por la API: el controlador
- * devuelve {@link PricePointDto}.
+ * <p>JPA entities are mutable classes with a no-arg constructor (Hibernate requires
+ * it), unlike our domain records. That's why this class isn't exposed through the
+ * API, the controller returns {@link PricePointDto} instead.
  */
 @Entity
 @Table(name = "price_history")
@@ -33,8 +31,8 @@ public class PriceHistoryEntry {
     @Column(nullable = false, length = 3)
     private String destination;
 
-    // En BD se llama observed_on ("day" es palabra reservada en H2); en Java
-    // seguimos hablando de "day" porque es como lo consume el resto del código.
+    // The column is observed_on because "day" is a reserved word in H2. In Java it
+    // stays "day" since that's what the rest of the code uses.
     @Column(name = "observed_on", nullable = false)
     private LocalDate day;
 
@@ -47,7 +45,7 @@ public class PriceHistoryEntry {
     @Column(length = 60)
     private String provider;
 
-    /** Constructor vacío exigido por JPA; no usar directamente. */
+    /** No-arg constructor required by JPA, don't use directly. */
     protected PriceHistoryEntry() {}
 
     public PriceHistoryEntry(String origin, String destination, LocalDate day,
@@ -60,7 +58,7 @@ public class PriceHistoryEntry {
         this.provider = provider;
     }
 
-    /** Sustituye el precio del día si la nueva observación es más barata. */
+    /** Replaces the day's price if the new observation is cheaper. */
     public void updateIfCheaper(BigDecimal newPrice, String newCurrency, String newProvider) {
         if (newPrice.compareTo(bestPrice) < 0) {
             this.bestPrice = newPrice;

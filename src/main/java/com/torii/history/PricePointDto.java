@@ -4,9 +4,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * Punto del histórico tal y como lo consume el gráfico del frontend
- * (src/api/priceHistory.ts). El campo se llama {@code date} (no {@code day})
- * porque ese es el contrato que el frontend ya espera.
+ * A history point in the shape the frontend chart expects (src/api/priceHistory.ts).
+ * The field is {@code date} rather than {@code day} because that's the contract the
+ * frontend already uses.
  */
 public record PricePointDto(LocalDate date, BigDecimal price, String currency) {
 

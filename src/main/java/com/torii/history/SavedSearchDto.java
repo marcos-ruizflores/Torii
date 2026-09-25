@@ -5,9 +5,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 /**
- * Una búsqueda guardada, tal y como la consume el frontend en "Mis últimas
- * búsquedas". Contiene todo lo necesario para poder REPETIR la búsqueda con un
- * clic (los mismos campos que el formulario).
+ * A saved search as the frontend's "recent searches" list uses it. Has everything
+ * needed to RUN the search again with one click (same fields as the form).
  */
 public record SavedSearchDto(
         Long id,

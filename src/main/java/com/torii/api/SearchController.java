@@ -13,15 +13,15 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Punto de entrada HTTP de Torii.
+ * HTTP entry point for searches.
  *
- * <p>Recibe la petición como {@link SearchRequestDto} (validada por {@code @Valid}),
- * la traduce al dominio y delega en {@link SearchService}. No contiene lógica de
- * negocio: solo es la frontera entre el mundo HTTP y el dominio.
+ * <p>Takes the request as a {@link SearchRequestDto} (checked by {@code @Valid}),
+ * maps it to the domain and hands it to {@link SearchService}. No business logic
+ * here, it's just the boundary between HTTP and the domain.
  *
- * <p>Buscar no requiere cuenta, pero si la petición trae un token JWT válido,
- * Spring lo inyecta como principal y la búsqueda queda asociada al usuario (para
- * "Mis últimas búsquedas"). Sin token, {@code jwt} es null: búsqueda anónima.
+ * <p>Searching doesn't need an account, but if the request carries a valid JWT,
+ * Spring injects it as the principal and the search gets linked to the user (for
+ * "recent searches"). Without a token {@code jwt} is null and it's an anonymous search.
  */
 @RestController
 @RequestMapping("/api/search")

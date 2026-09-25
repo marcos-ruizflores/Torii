@@ -25,10 +25,9 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 /**
- * Test del proveedor de Amadeus contra un servidor HTTP simulado. Verifica las dos
- * cosas con lógica: que mapea bien la respuesta a {@link FlightOffer}, y que un 429
- * se convierte en {@link ProviderQuotaExceededException} para que el failover lo
- * aparque.
+ * Amadeus provider test against a mock HTTP server. Covers the two bits with actual
+ * logic: mapping the response to {@link FlightOffer}, and turning a 429 into
+ * {@link ProviderQuotaExceededException} so the failover parks it.
  */
 class AmadeusFlightProviderTest {
 
@@ -39,13 +38,13 @@ class AmadeusFlightProviderTest {
     void setUp() {
         RestClient.Builder builder = RestClient.builder();
         server = MockRestServiceServer.bindTo(builder).build();
-        // Token fijo (no probamos aquí la autenticación, eso es del AuthClientTest).
+        // Fixed token (auth isn't tested here, that's what AuthClientTest is for).
         provider = new AmadeusFlightProvider(builder, () -> "TEST_TOKEN", AmadeusProperties.defaults());
     }
 
     @Test
     void mapeaLaRespuestaDeAmadeusAFlightOffer() {
-        // Respuesta recortada con la forma real de Amadeus: ida (BCN→NRT) y vuelta (NRT→BCN).
+        // Trimmed response with the real Amadeus shape: outbound (BCN->NRT) and return (NRT->BCN).
         String json = """
                 {
                   "data": [
@@ -81,11 +80,11 @@ class AmadeusFlightProviderTest {
         assertThat(o.airline()).isEqualTo("IB");
         assertThat(o.price()).isEqualByComparingTo("325.50");
         assertThat(o.currency()).isEqualTo("EUR");
-        assertThat(o.stops()).isZero(); // un segmento por trayecto → directo
+        assertThat(o.stops()).isZero(); // one segment per leg -> direct
         assertThat(o.departDate()).isEqualTo(LocalDate.of(2026, 7, 1));
         assertThat(o.returnDate()).isEqualTo(LocalDate.of(2026, 7, 15));
-        assertThat(o.departureTime()).isEqualTo(LocalTime.of(10, 30)); // de "2026-07-01T10:30:00"
-        assertThat(o.stopovers()).isEmpty(); // ida con un solo segmento → sin escalas
+        assertThat(o.departureTime()).isEqualTo(LocalTime.of(10, 30)); // from "2026-07-01T10:30:00"
+        assertThat(o.stopovers()).isEmpty(); // outbound with a single segment -> no stops
         server.verify();
     }
 

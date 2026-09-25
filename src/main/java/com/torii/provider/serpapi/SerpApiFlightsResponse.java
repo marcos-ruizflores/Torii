@@ -6,12 +6,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /**
- * Subconjunto de la respuesta de SerpApi (engine {@code google_flights}).
+ * The part of the SerpApi response ({@code google_flights} engine) we use.
  *
- * <p>SerpApi agrupa los resultados en {@code best_flights} (los que destaca Google) y
- * {@code other_flights} (el resto). Cada grupo tiene un precio, una lista de tramos
- * ({@code flights}) y una lista de escalas ({@code layovers}). Si algo va mal, SerpApi
- * suele incluir un campo {@code error} en el JSON.
+ * <p>Results come split into {@code best_flights} (the ones Google highlights) and
+ * {@code other_flights} (everything else). Each group has a price, a list of legs
+ * ({@code flights}) and a list of {@code layovers}. When something goes wrong SerpApi
+ * usually adds an {@code error} field to the JSON.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record SerpApiFlightsResponse(
@@ -33,7 +33,7 @@ public record SerpApiFlightsResponse(
             @JsonProperty("departure_airport") Airport departureAirport
     ) {}
 
-    /** Aeropuerto con su código y la hora ("AAAA-MM-DD HH:MM"). */
+    /** Airport code and time ("YYYY-MM-DD HH:MM"). */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Airport(String id, String time) {}
 

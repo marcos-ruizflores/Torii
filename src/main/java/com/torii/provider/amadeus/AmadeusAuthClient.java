@@ -14,22 +14,21 @@ import java.time.Clock;
 import java.time.Instant;
 
 /**
- * Gestiona el token OAuth2 de Amadeus.
+ * Handles the Amadeus OAuth2 token.
  *
- * <p>Amadeus no usa una API key directa: primero hay que pedir un token de acceso
- * (con la API Key + Secret) que caduca a la media hora, y luego ese token se manda
- * como cabecera {@code Authorization: Bearer ...} en cada búsqueda.
+ * <p>Amadeus doesn't take the API key directly. You first request an access token
+ * with the API key + secret, it expires after about 30 minutes, and that token goes
+ * in an {@code Authorization: Bearer ...} header on every search.
  *
- * <p>Esta clase pide el token una vez y lo <b>cachea</b> hasta poco antes de que
- * caduque, renovándolo solo cuando hace falta. Así no pedimos un token nuevo en cada
- * búsqueda. El método {@link #currentToken()} es {@code synchronized} para que dos
- * hilos no pidan token a la vez.
+ * <p>This class requests the token once and <b>caches</b> it until shortly before it
+ * expires, so we're not asking for a new one on every lookup. {@link #currentToken()}
+ * is {@code synchronized} so two threads don't both request a token at once.
  */
 public class AmadeusAuthClient {
 
     private static final Logger log = LoggerFactory.getLogger(AmadeusAuthClient.class);
 
-    /** Margen de seguridad: renovamos el token 60 s antes de su caducidad real. */
+    /** Safety margin: refresh the token 60s before it actually expires. */
     private static final long SAFETY_MARGIN_SECONDS = 60;
 
     private final RestClient restClient;
@@ -45,7 +44,7 @@ public class AmadeusAuthClient {
         this.clock = clock;
     }
 
-    /** Devuelve un token válido, renovándolo si el actual ha caducado (o casi). */
+    /** Returns a valid token, refreshing it if the current one has (almost) expired. */
     public synchronized String currentToken() {
         Instant now = clock.instant();
         boolean stillValid = cachedToken != null
@@ -57,7 +56,7 @@ public class AmadeusAuthClient {
     }
 
     private String requestNewToken(Instant now) {
-        // El endpoint de token espera un formulario (application/x-www-form-urlencoded).
+        // The token endpoint expects a form body (application/x-www-form-urlencoded).
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("grant_type", "client_credentials");
         form.add("client_id", props.apiKey());

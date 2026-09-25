@@ -1,4 +1,4 @@
-# No enviar al contexto de build (más rápido y evita filtrar cosas):
+# Keep these out of the build context (faster, and nothing leaks into the image):
 target/
 frontend/
 .git/

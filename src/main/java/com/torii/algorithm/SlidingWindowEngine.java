@@ -20,32 +20,32 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 
 /**
- * El corazón de Torii: el algoritmo de "ventana deslizante" sobre fechas.
+ * Core of Torii: a sliding window search over travel dates.
  *
- * <p>Dada una ventana de vacaciones posible (ej. 1 jul – 30 sep), una duración base
- * (ej. 14 días) y una variabilidad (ej. 3 → duraciones 14, 15, 16, 17), explora
- * todas las combinaciones de fecha de salida y duración, pregunta el precio a un
- * {@link FlightProvider} y devuelve las {@code topN} más baratas.
+ * <p>Given a holiday window (e.g. Jul 1 - Sep 30), a base trip length (e.g. 14 days)
+ * and a variability (e.g. 3, so lengths 14 to 17), it goes through every combination
+ * of departure date and length, asks a {@link FlightProvider} for prices and returns
+ * the {@code topN} cheapest offers.
  *
- * <p>Las consultas son trabajo de <b>entrada/salida</b> (esperar respuestas de red),
- * así que se lanzan en paralelo sobre <b>hilos virtuales</b> (Java 21+): mientras una
- * llamada espera, su hilo se "desmonta" y el hilo real atiende otra. Un
- * {@link Semaphore} limita cuántas llamadas hay en vuelo a la vez, para respetar el
- * límite de peticiones de las APIs externas. Pasamos así de un tiempo total que era
- * la <i>suma</i> de todas las llamadas a uno cercano al de un solo lote.
+ * <p>The lookups are I/O bound (mostly waiting on the network), so they run in
+ * parallel on <b>virtual threads</b> (Java 21+). While one call is waiting, its
+ * thread gets unmounted and the carrier thread picks up another one. A
+ * {@link Semaphore} caps how many calls are in flight at once so we stay under the
+ * rate limits of the external APIs. Total time goes from the <i>sum</i> of all calls
+ * to roughly the time of a single batch.
  */
 @Component
 public class SlidingWindowEngine {
 
     private static final Logger log = LoggerFactory.getLogger(SlidingWindowEngine.class);
 
-    /** Un par de fechas a consultar (una unidad de trabajo). */
+    /** One date pair to query (a single unit of work). */
     private record DatePair(LocalDate depart, LocalDate returnDate) {}
 
     /**
-     * Orden final determinista: por precio y, para desempatar (mismo precio), por
-     * fecha de salida y aerolínea. Sin este desempate, la ejecución en paralelo podría
-     * devolver las ofertas empatadas en distinto orden en cada búsqueda.
+     * Deterministic final order: by price, then by departure date and airline to
+     * break ties. Without the tie-breaker, the parallel run could return offers with
+     * the same price in a different order on every search.
      */
     private static final Comparator<FlightOffer> BY_PRICE_THEN_STABLE =
             Comparator.comparing(FlightOffer::price)
@@ -62,10 +62,10 @@ public class SlidingWindowEngine {
     }
 
     /**
-     * Ejecuta la búsqueda y devuelve las mejores ofertas ordenadas por precio.
+     * Runs the search and returns the best offers sorted by price.
      *
-     * @param request petición ya validada
-     * @return lista de hasta {@code request.topN()} ofertas, de más barata a más cara
+     * @param request an already validated request
+     * @return up to {@code request.topN()} offers, cheapest first
      */
     public List<FlightOffer> findBestOffers(SearchRequest request) {
         List<DatePair> pairs = buildDatePairs(request);
@@ -77,8 +77,8 @@ public class SlidingWindowEngine {
                 rangeDays, pairs.size(), maxConcurrency, allCandidates.size());
 
         return allCandidates.stream()
-                // Filtro de presupuesto (si lo hay). Se aplica aquí, sobre los datos
-                // ya cacheados, para que la caché sirva a cualquier presupuesto.
+                // Budget filter, if any. It's applied here on top of the cached data
+                // so the same cache entries work for any budget.
                 .filter(offer -> request.maxPrice() == null
                         || offer.price().compareTo(request.maxPrice()) <= 0)
                 .sorted(BY_PRICE_THEN_STABLE)
@@ -87,18 +87,18 @@ public class SlidingWindowEngine {
     }
 
     /**
-     * Cuántas consultas (pares de fechas) hará esta búsqueda. Lo usa el historial de
-     * búsquedas y, en el futuro, el contador de cuota de cada plan.
+     * Number of lookups (date pairs) this search will make. Used by the search
+     * history and by the per-plan quota counter.
      */
     public int countQueries(SearchRequest request) {
         return buildDatePairs(request).size();
     }
 
-    /** Genera todos los pares (ida, vuelta) a explorar (lógica pura, sin llamadas). */
+    /** Builds every (outbound, return) pair to explore. Pure logic, no calls. */
     private List<DatePair> buildDatePairs(SearchRequest request) {
-        // La precisión decide cada cuántos días avanzamos la fecha de salida:
-        // 1 (exhaustiva) explora todos los días; 2 o 3 saltan días para hacer menos
-        // consultas a costa de poder perderse el día exacto más barato.
+        // Precision sets how many days we move the departure date forward each step.
+        // 1 (exhaustive) checks every day; 2 or 3 skip days to make fewer calls, at
+        // the cost of possibly missing the exact cheapest day.
         int step = request.precision().dayStep();
         List<DatePair> pairs = new ArrayList<>();
 
@@ -114,20 +114,20 @@ public class SlidingWindowEngine {
     }
 
     /**
-     * Consulta todos los pares de fechas en paralelo (hilos virtuales) con la
-     * concurrencia limitada por el semáforo, y junta todas las ofertas.
+     * Queries every date pair in parallel on virtual threads, with concurrency
+     * capped by the semaphore, and collects all the offers.
      */
     private List<FlightOffer> queryAllInParallel(SearchRequest request, List<DatePair> pairs) {
         Semaphore limit = new Semaphore(maxConcurrency);
         List<FlightOffer> all = new ArrayList<>();
 
-        // try-with-resources: al cerrar, el executor espera a que terminen las tareas.
+        // try-with-resources: close() waits for all submitted tasks to finish.
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
             List<Future<List<FlightOffer>>> futures = new ArrayList<>(pairs.size());
 
             for (DatePair pair : pairs) {
                 futures.add(executor.submit(() -> {
-                    limit.acquire(); // espera si ya hay maxConcurrency llamadas en vuelo
+                    limit.acquire(); // blocks if maxConcurrency calls are already in flight
                     try {
                         return provider.searchOffers(
                                 request.origin(), request.destination(),
@@ -142,8 +142,8 @@ public class SlidingWindowEngine {
                 try {
                     all.addAll(future.get());
                 } catch (ExecutionException e) {
-                    // Una fecha concreta falló (p. ej. ningún proveedor disponible).
-                    // No tumbamos la búsqueda entera: seguimos con el resto.
+                    // One date failed (e.g. no provider available). Don't kill the
+                    // whole search over it, just carry on with the rest.
                     log.warn("Una consulta falló y se omite: {}", e.getCause().getMessage());
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();

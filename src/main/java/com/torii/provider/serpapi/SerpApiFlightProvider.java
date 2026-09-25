@@ -18,16 +18,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Proveedor "Google Flights" a través de SerpApi.
+ * Google Flights provider through SerpApi.
  *
- * <p>Implementa la misma interfaz {@link FlightProvider} que Amadeus y el mock, así
- * que encaja en el motor de failover sin cambios. Más simple que Amadeus: la
- * autenticación es solo la {@code api_key} en la URL, sin token OAuth.
+ * <p>Same {@link FlightProvider} interface as Amadeus and the mock, so it fits into
+ * the failover chain as is. Simpler than Amadeus: auth is just the {@code api_key}
+ * query param, no OAuth token.
  *
- * <p>Como SerpApi devuelve el precio total del viaje de ida y vuelta para el par de
- * fechas consultado, usamos las fechas que ya conocemos (las de la petición) en lugar
- * de intentar deducirlas de la respuesta, que para ida y vuelta requeriría una
- * segunda llamada.
+ * <p>SerpApi returns the total round-trip price for the requested dates, so we use
+ * the dates we already know (from the request) instead of trying to read them from
+ * the response, which for round trips would need a second call.
  */
 public class SerpApiFlightProvider implements FlightProvider {
 
@@ -54,15 +53,14 @@ public class SerpApiFlightProvider implements FlightProvider {
                             .queryParam("arrival_id", destination)
                             .queryParam("outbound_date", departDate)
                             .queryParam("return_date", returnDate)
-                            // type=1: ida y vuelta. El "price" que devuelve YA es el
-                            // total del round trip, así que con una sola llamada nos
-                            // basta para conocer el precio (los detalles del tramo de
-                            // vuelta requerirían una 2ª llamada con departure_token).
+                            // type=1 is round trip. The returned "price" is ALREADY the
+                            // round-trip total, so one call is enough to get the price
+                            // (return leg details would need a 2nd call with departure_token).
                             .queryParam("type", 1)
                             .queryParam("stops", toSerpApiStops(maxStops))
-                            // sort_by=2 (precio): así el primer resultado de cada fecha
-                            // es el MÁS BARATO, que es justo lo que Torii busca. Con el
-                            // default (top flights) podríamos perdernos el mínimo real.
+                            // sort_by=2 (price) makes the first result for each date the
+                            // CHEAPEST one, which is exactly what we want. The default
+                            // (top flights) could miss the real minimum.
                             .queryParam("sort_by", 2)
                             .queryParam("currency", props.currency())
                             .queryParam("hl", "en")
@@ -71,7 +69,7 @@ public class SerpApiFlightProvider implements FlightProvider {
                     .retrieve()
                     .body(SerpApiFlightsResponse.class);
 
-            // SerpApi señala "sin búsquedas disponibles" u otros fallos en un campo "error".
+            // SerpApi reports "out of searches" and other failures in an "error" field.
             if (response != null && response.error() != null) {
                 String msg = response.error();
                 if (msg.toLowerCase().contains("run out") || msg.toLowerCase().contains("searches")) {
@@ -116,7 +114,7 @@ public class SerpApiFlightProvider implements FlightProvider {
                 ? firstLeg.airline()
                 : "??";
 
-        // Las escalas son las paradas intermedias (layovers).
+        // Stopovers are the layovers.
         List<String> stopovers = (group.layovers() != null)
                 ? group.layovers().stream().map(SerpApiFlightsResponse.Layover::id).toList()
                 : List.of();
@@ -136,7 +134,7 @@ public class SerpApiFlightProvider implements FlightProvider {
                 departDate, returnDate, departureTime, stopovers, bookingUrl);
     }
 
-    /** Saca la hora de salida del primer tramo. El formato de SerpApi es "AAAA-MM-DD HH:MM". */
+    /** Departure time of the first leg. SerpApi uses "YYYY-MM-DD HH:MM". */
     private LocalTime extractDepartureTime(SerpApiFlightsResponse.Leg leg) {
         if (leg == null || leg.departureAirport() == null || leg.departureAirport().time() == null) {
             return null;
@@ -145,20 +143,20 @@ public class SerpApiFlightProvider implements FlightProvider {
             String time = leg.departureAirport().time(); // "2026-09-01 10:45"
             return LocalTime.parse(time.substring(11)); // "10:45"
         } catch (RuntimeException e) {
-            return null; // si el formato cambia, mejor null que romper la búsqueda
+            return null; // if the format ever changes, null is better than breaking the search
         }
     }
 
     /**
-     * Traduce nuestro "máximo de escalas" al parámetro {@code stops} de SerpApi, que
-     * usa otra codificación: 1=directo, 2=hasta 1 escala, 3=hasta 2 escalas, 0=cualquiera.
+     * Maps our max stops to SerpApi's {@code stops} param, which uses a different
+     * encoding: 1 = direct, 2 = up to 1 stop, 3 = up to 2 stops, 0 = any.
      */
     private static int toSerpApiStops(int maxStops) {
         return switch (maxStops) {
-            case 0 -> 1;  // solo directos
-            case 1 -> 2;  // 1 escala o menos
-            case 2 -> 3;  // 2 escalas o menos
-            default -> 0; // cualquier número de escalas
+            case 0 -> 1;  // direct only
+            case 1 -> 2;  // 1 stop or fewer
+            case 2 -> 3;  // 2 stops or fewer
+            default -> 0; // any number of stops
         };
     }
 

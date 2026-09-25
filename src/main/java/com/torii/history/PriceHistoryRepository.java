@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Acceso a la tabla {@code price_history}. Spring Data genera la implementación a
- * partir del NOMBRE de cada método (query derivation): no escribimos SQL.
+ * Access to {@code price_history}. Spring Data derives the queries from the method
+ * NAMES, so there's no SQL to write.
  */
 public interface PriceHistoryRepository extends JpaRepository<PriceHistoryEntry, Long> {
 

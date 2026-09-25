@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Endpoints públicos de autenticación: registro y login. */
+/** Public auth endpoints: sign up and log in. */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {

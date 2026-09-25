@@ -5,7 +5,7 @@ import type { SavedSearch, SearchRequest } from '../api/types'
 
 const PRECISION_LABEL = { FAST: 'Rápida', BALANCED: 'Equilibrada', EXHAUSTIVE: 'Exhaustiva' }
 
-/** Convierte una búsqueda guardada en la petición exacta para repetirla. */
+/** Turns a saved search into the exact request needed to run it again. */
 export function toRequest(s: SavedSearch): SearchRequest {
   return {
     origin: s.origin,
@@ -30,7 +30,7 @@ function searchedAt(iso: string): string {
   })
 }
 
-/** Una búsqueda guardada en formato fila, con su botón de repetir. */
+/** A saved search as a row, with its repeat button. */
 export function SavedSearchItem({ search: s, onRepeat }: { search: SavedSearch; onRepeat: () => void }) {
   return (
     <li className="flex flex-wrap items-center justify-between gap-3 py-3">

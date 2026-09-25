@@ -12,21 +12,21 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 /**
- * Configuración CORS: permite que el frontend, desplegado en OTRO origen (otro
- * dominio/puerto), pueda llamar a esta API desde el navegador.
+ * CORS config so the frontend, deployed on a DIFFERENT origin (domain/port), can call
+ * this API from the browser.
  *
- * <p>Contexto: en desarrollo no hace falta, porque el proxy de Vite hace que el
- * navegador crea que habla con su propio origen. Pero con el frontend y el backend
- * desplegados por separado (p. ej. la SPA en Vercel y la API en otro servidor), el
- * navegador aplica la "same-origin policy" y bloquea las llamadas salvo que el
- * backend declare explícitamente qué orígenes acepta — que es esto.
+ * <p>Not needed in dev because the Vite proxy makes the browser think it's talking to
+ * its own origin. But once frontend and backend are deployed separately (e.g. the SPA
+ * on Vercel and the API somewhere else), the browser enforces the same-origin policy
+ * and blocks the calls unless the backend explicitly lists which origins it accepts.
+ * That's what this does.
  *
- * <p>Se expone como bean {@code corsConfigurationSource} porque es lo que Spring
- * Security busca para su filtro CORS (que corre ANTES que el resto de la cadena de
- * seguridad, imprescindible para que los preflight OPTIONS no acaben en 401).
+ * <p>It's exposed as the {@code corsConfigurationSource} bean because that's what
+ * Spring Security looks for in its CORS filter, which runs BEFORE the rest of the
+ * security chain. Without that, OPTIONS preflights end up as 401s.
  *
- * <p>Los orígenes se configuran con {@code torii.cors.allowed-origins} (lista
- * separada por comas). Nunca usar "*" en producción.
+ * <p>Origins are set with {@code torii.cors.allowed-origins} (comma separated). Never
+ * use "*" in production.
  */
 @Configuration
 public class CorsConfig {
@@ -46,10 +46,10 @@ public class CorsConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(allowedOrigins);
         config.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
-        // El frontend manda Content-Type y Authorization (el token JWT).
+        // The frontend sends Content-Type and Authorization (the JWT).
         config.setAllowedHeaders(List.of("Content-Type", "Authorization"));
-        // Cachear la respuesta de preflight 1h: el navegador no repite el OPTIONS
-        // en cada petición.
+        // Cache the preflight response for 1h so the browser doesn't send an OPTIONS
+        // before every request.
         config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

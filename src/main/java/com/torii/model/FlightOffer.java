@@ -7,24 +7,24 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
- * Una oferta concreta de vuelo ida y vuelta para un par de fechas determinado.
+ * A single round-trip offer for a specific pair of dates.
  *
- * <p>Es lo que un {@link com.torii.provider.FlightProvider} devuelve para una
- * combinación (origen, destino, fecha de ida, fecha de vuelta) y, a la vez, lo que
- * el algoritmo selecciona como mejores resultados.
+ * <p>It's what a {@link com.torii.provider.FlightProvider} returns for an
+ * (origin, destination, outbound date, return date) combination, and also what the
+ * algorithm picks as the best results.
  *
- * <p>Notas de diseño:
+ * <p>Design notes:
  * <ul>
- *   <li>El precio es {@link BigDecimal}: nunca se usa {@code double} para dinero,
- *       porque introduce errores de redondeo.</li>
- *   <li>La duración de la estancia no se guarda como campo: se deriva de las fechas
- *       con {@link #durationDays()}, evitando datos redundantes que puedan
- *       contradecirse.</li>
- *   <li>{@code departureTime}, {@code returnDepartureTime} y {@code stopovers}
- *       enriquecen la oferta para poder distinguir vuelos que, de otro modo,
- *       parecerían iguales (misma aerolínea y precio pero distinto horario o
- *       escala). Pueden faltar ({@code null} / lista vacía) si la fuente no los
- *       aporta — p. ej. SerpApi no da la hora de vuelta sin una segunda llamada.</li>
+ *   <li>Price is a {@link BigDecimal}. Never use {@code double} for money, it
+ *       introduces rounding errors.</li>
+ *   <li>Trip length isn't stored as a field. It's derived from the dates in
+ *       {@link #durationDays()} so there's no redundant data that could get out of
+ *       sync.</li>
+ *   <li>{@code departureTime}, {@code returnDepartureTime} and {@code stopovers} are
+ *       there to tell apart flights that would otherwise look the same (same airline
+ *       and price, different times or stops). They can be missing ({@code null} or an
+ *       empty list) when the source doesn't provide them, e.g. SerpApi doesn't give
+ *       the return time without a second call.</li>
  * </ul>
  */
 public record FlightOffer(
@@ -40,8 +40,8 @@ public record FlightOffer(
         String bookingUrl
 ) {
     /**
-     * Constructor de conveniencia sin datos de enriquecimiento (horas y escalas),
-     * para el código y los tests que no los necesitan.
+     * Convenience constructor without times and stopovers, for code and tests that
+     * don't need them.
      */
     public FlightOffer(String airline, BigDecimal price, String currency, int stops,
                        LocalDate departDate, LocalDate returnDate, String bookingUrl) {
@@ -49,8 +49,8 @@ public record FlightOffer(
     }
 
     /**
-     * Constructor de compatibilidad SIN hora de vuelta, para las fuentes que no
-     * pueden aportarla (SerpApi) y los tests previos a este campo.
+     * Constructor WITHOUT the return departure time, for sources that can't provide
+     * it (SerpApi) and for tests written before the field existed.
      */
     public FlightOffer(String airline, BigDecimal price, String currency, int stops,
                        LocalDate departDate, LocalDate returnDate, LocalTime departureTime,
@@ -59,7 +59,7 @@ public record FlightOffer(
                 departureTime, null, stopovers, bookingUrl);
     }
 
-    /** Días de estancia (diferencia exacta entre vuelta e ida). */
+    /** Length of stay in days (exact difference between return and outbound). */
     public long durationDays() {
         return ChronoUnit.DAYS.between(departDate, returnDate);
     }

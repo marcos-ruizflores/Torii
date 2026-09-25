@@ -18,9 +18,9 @@ interface Props {
 const MS_PER_DAY = 86_400_000
 
 /**
- * Estima cuántas consultas hará la búsqueda (un par de fechas = una posible llamada
- * a las APIs). Replica la lógica de la ventana deslizante del backend, para avisar al
- * usuario ANTES de pulsar Buscar y no quemar cuota de las APIs externas.
+ * Estimates how many lookups the search will make (one date pair = one possible API
+ * call). Mirrors the backend sliding window logic so the user gets warned BEFORE
+ * hitting search, instead of burning external API quota.
  */
 function estimateQueries(
   range: DateRange | null,
@@ -37,7 +37,7 @@ function estimateQueries(
 
   let total = 0
   for (let d = baseDuration; d <= baseDuration + variability; d++) {
-    const slots = rangeDays - d // días de salida posibles para esta duración
+    const slots = rangeDays - d // possible departure days for this trip length
     if (slots >= 0) {
       total += Math.floor(slots / step) + 1
     }
@@ -52,8 +52,8 @@ const PRECISION_OPTIONS = [
 ]
 
 export function SearchForm({ onSearch, loading }: Props) {
-  // Rango por defecto SEGURO y relativo a hoy (~3 consultas): fechas fijas caducan y
-  // un rango grande quemaría la cuota de las APIs con la primera búsqueda.
+  // SAFE default range relative to today (~3 lookups). Fixed dates go stale and a
+  // big range would burn the API quota on the very first search.
   const defaultStart = today(getLocalTimeZone()).add({ months: 2 })
 
   const [origin, setOrigin] = useState('BCN')
@@ -67,11 +67,11 @@ export function SearchForm({ onSearch, loading }: Props) {
   const [maxStops, setMaxStops] = useState(2)
   const [topN, setTopN] = useState(5)
   const [precision, setPrecision] = useState<SearchPrecision>('EXHAUSTIVE')
-  // Presupuesto máximo opcional: null = sin límite.
+  // Optional budget, null means no limit.
   const [maxPrice, setMaxPrice] = useState<number | null>(null)
 
   const estimatedQueries = estimateQueries(range, baseDuration, variability, precision)
-  // Umbrales de aviso pensando en cuotas gratuitas pequeñas (SerpApi ~100/mes).
+  // Warning thresholds tuned for small free quotas (SerpApi is ~100/month).
   const queryColor = estimatedQueries > 100 ? 'error' : estimatedQueries > 30 ? 'warning' : 'success'
 
   const canSubmit = origin.length === 3 && destination.length === 3 && range !== null
@@ -81,7 +81,7 @@ export function SearchForm({ onSearch, loading }: Props) {
     const request: SearchRequest = {
       origin: origin.toUpperCase(),
       destination: destination.toUpperCase(),
-      // CalendarDate.toString() ya produce "AAAA-MM-DD" sin líos de zona horaria.
+      // CalendarDate.toString() already gives "YYYY-MM-DD" with no timezone issues.
       rangeStart: range.start.toString(),
       rangeEnd: range.end.toString(),
       baseDuration,
@@ -90,7 +90,7 @@ export function SearchForm({ onSearch, loading }: Props) {
       topN,
       precision,
     }
-    // El presupuesto es opcional: solo se envía si el usuario puso un número.
+    // Budget is optional, only sent if the user entered a number.
     if (maxPrice !== null && maxPrice > 0) {
       request.maxPrice = maxPrice
     }

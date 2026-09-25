@@ -17,15 +17,14 @@ import java.time.Duration;
 import java.time.Instant;
 
 /**
- * Emisión de tokens JWT firmados con un secreto simétrico (HS256).
+ * Issues JWTs signed with a symmetric secret (HS256).
  *
- * <p>El token es la "entrada de cine" del usuario: el login lo emite y, a partir de
- * ahí, el frontend lo manda en cada petición ({@code Authorization: Bearer ...}).
- * El backend NO guarda sesiones: le basta verificar la firma. El subject del token
- * es el id del usuario.
+ * <p>Login issues the token and from then on the frontend sends it with every request
+ * ({@code Authorization: Bearer ...}). The backend keeps NO sessions, checking the
+ * signature is enough. The token subject is the user id.
  *
- * <p>El secreto viene de {@code TORII_JWT_SECRET}; el valor por defecto es SOLO
- * para desarrollo (con él, cualquiera podría falsificar tokens en producción).
+ * <p>The secret comes from {@code TORII_JWT_SECRET}. The default value is ONLY for
+ * local dev: with it anyone could forge tokens in production.
  */
 @Service
 public class JwtService {
@@ -42,7 +41,7 @@ public class JwtService {
         this.ttl = ttl;
     }
 
-    /** La misma clave que usa el decoder de SecurityConfig: firma y verificación deben coincidir. */
+    /** Same key the SecurityConfig decoder uses, signing and verifying have to match. */
     static SecretKey secretKey(String secret) {
         return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
     }

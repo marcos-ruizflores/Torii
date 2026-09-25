@@ -1,16 +1,16 @@
 package com.torii.user;
 
 /**
- * Los planes de Torii y su cuota mensual de consultas. Debe cuadrar con lo que
- * promete la página /planes del frontend.
+ * Torii plans and their monthly lookup quota. Has to match what the frontend
+ * /planes page promises.
  *
- * <p>Recuerda: una BÚSQUEDA consume varias CONSULTAS (una por par de fechas
- * explorado); el estimador del formulario enseña el coste antes de buscar.
+ * <p>Keep in mind one SEARCH uses several LOOKUPS (one per date pair explored). The
+ * estimator in the form shows the cost before searching.
  */
 public enum Plan {
     FREE(30),
     PRO(500),
-    BUSINESS(null); // null = sin límite
+    BUSINESS(null); // null = no limit
 
     private final Integer monthlyQueries;
 
@@ -18,12 +18,12 @@ public enum Plan {
         this.monthlyQueries = monthlyQueries;
     }
 
-    /** Cuota mensual de consultas, o null si es ilimitada. */
+    /** Monthly lookup quota, or null if unlimited. */
     public Integer monthlyQueries() {
         return monthlyQueries;
     }
 
-    /** Tolerante con datos viejos: un plan desconocido en BD se trata como FREE. */
+    /** Lenient with old data: an unknown plan in the DB is treated as FREE. */
     public static Plan fromName(String name) {
         try {
             return valueOf(name);

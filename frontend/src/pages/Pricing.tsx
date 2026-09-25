@@ -9,20 +9,18 @@ import { useAuth } from '../auth/AuthContext'
 import type { User } from '../api/types'
 
 /**
- * Página de planes/mejora de plan, al estilo de las pricing pages de Untitled UI.
+ * Plans / upgrade page, based on Untitled UI's pricing pages.
  *
- * SOLO INTERFAZ por ahora. Los planes se corresponden con lo que YA existe en el
- * backend: la precisión de búsqueda (FAST/BALANCED/EXHAUSTIVE) y el nº de
- * consultas que consume cada búsqueda. Cuando exista la base de datos de
- * usuarios, cada cuenta guardará su plan y el backend limitará las consultas
- * mensuales según él.
+ * Plans map to what the backend already has: search precision
+ * (FAST/BALANCED/EXHAUSTIVE) and the monthly lookup quota enforced per account.
+ * There's no payment step yet, picking a plan just switches it.
  */
 
 interface Plan {
-  key: User['plan'] // el nombre que entiende el backend (FREE/PRO/BUSINESS)
+  key: User['plan'] // the name the backend expects (FREE/PRO/BUSINESS)
   name: string
-  monthly: number // €/mes con pago mensual
-  annualMonthly: number // €/mes equivalente con pago anual
+  monthly: number // EUR/month, billed monthly
+  annualMonthly: number // EUR/month equivalent, billed yearly
   description: string
   features: string[]
   cta: string
@@ -87,7 +85,7 @@ export function Pricing() {
   const [error, setError] = useState<string | null>(null)
 
   async function handleChoose(plan: Plan) {
-    // Sin sesión, elegir plan empieza por crear la cuenta.
+    // Not logged in: picking a plan starts with creating an account.
     if (!user) {
       navigate('/signup')
       return
@@ -97,7 +95,7 @@ export function Pricing() {
     try {
       const updated = await changePlan(plan.key)
       updateUser(updated)
-      // El límite de cuota ha cambiado: refrescar el contador de la cabecera.
+      // Quota limit changed, refresh the counter in the header.
       queryClient.invalidateQueries({ queryKey: ['my-usage'] })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo cambiar el plan')

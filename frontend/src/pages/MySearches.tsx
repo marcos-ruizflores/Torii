@@ -8,15 +8,15 @@ import { useAuth } from '../auth/AuthContext'
 import { SavedSearchItem, toRequest } from '../components/SavedSearchItem'
 
 /**
- * Página completa de "Mis búsquedas": todo el historial del usuario (hasta 50).
- * "Repetir" vuelve al buscador y relanza la búsqueda automáticamente — la portada
- * (App) lee el state de navegación {repeat} y la ejecuta al montar.
+ * Full "my searches" page: the user's whole history (up to 50). "Repeat" goes back
+ * to the search page and re-runs it automatically, App reads the {repeat}
+ * navigation state and runs it on mount.
  */
 export function MySearches() {
   const navigate = useNavigate()
   const { user } = useAuth()
 
-  // Página solo para usuarios con sesión: los anónimos van al login.
+  // Logged in users only, anonymous visitors get sent to login.
   useEffect(() => {
     if (!user) navigate('/login')
   }, [user, navigate])

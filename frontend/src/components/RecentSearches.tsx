@@ -7,16 +7,16 @@ import type { SearchRequest } from '../api/types'
 import { SavedSearchItem, toRequest } from './SavedSearchItem'
 
 interface Props {
-  /** Repite la búsqueda guardada (mismos parámetros que el formulario). */
+  /** Re-runs the saved search (same params as the form). */
   onRepeat: (request: SearchRequest) => void
 }
 
-/** Cuántas búsquedas se ven en la portada; el resto viven en /mis-busquedas. */
+/** How many searches show on the home page, the rest live in /mis-busquedas. */
 const SHOWN_ON_HOME = 3
 
 /**
- * "Mis últimas búsquedas" (versión portada): las 3 más recientes del usuario, con
- * un enlace a la página completa si hay más.
+ * Recent searches (home page version): the user's 3 latest, with a link to the full
+ * page if there are more.
  */
 export function RecentSearches({ onRepeat }: Props) {
   const navigate = useNavigate()
@@ -26,7 +26,7 @@ export function RecentSearches({ onRepeat }: Props) {
   })
 
   if (!searches.isSuccess || searches.data.length === 0) {
-    return null // sin historial todavía: no ocupamos sitio
+    return null // no history yet, don't take up space
   }
 
   const visible = searches.data.slice(0, SHOWN_ON_HOME)

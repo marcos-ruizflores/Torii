@@ -1,14 +1,13 @@
 package com.torii.provider;
 
 /**
- * Indica que un {@link FlightProvider} ha agotado su cuota o límite de peticiones
- * (típicamente, una respuesta HTTP 429 de la API).
+ * Thrown when a {@link FlightProvider} has run out of quota or hit its rate limit
+ * (usually an HTTP 429 from the API).
  *
- * <p>A diferencia de un fallo temporal, esto significa que <b>no merece la pena
- * volver a intentarlo con este proveedor durante un rato</b>. El
- * {@link FailoverFlightProvider} lo aprovecha para "aparcar" al proveedor durante un
- * tiempo de enfriamiento (cooldown) y no malgastar llamadas que sabe que fallarán,
- * yendo directo al siguiente.
+ * <p>Unlike a temporary failure, this means <b>there's no point trying this provider
+ * again for a while</b>. {@link FailoverFlightProvider} uses it to park the provider
+ * for a cooldown period instead of wasting calls it knows will fail, and goes
+ * straight to the next one.
  */
 public class ProviderQuotaExceededException extends FlightProviderException {
 

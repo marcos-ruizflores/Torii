@@ -4,16 +4,16 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
 /**
- * Configuración de la integración con Amadeus, bajo el prefijo {@code torii.amadeus}.
+ * Amadeus integration settings, under the {@code torii.amadeus} prefix.
  *
- * <p>Las credenciales ({@code apiKey}, {@code apiSecret}) NUNCA se escriben en el
- * código ni en el repositorio: en {@code application.properties} se leen de variables
- * de entorno ({@code AMADEUS_API_KEY}, {@code AMADEUS_API_SECRET}). Por defecto la
- * integración está {@code enabled = false}, de modo que la aplicación arranca sin
- * claves y nada cambia hasta que tú la actives.
+ * <p>Credentials ({@code apiKey}, {@code apiSecret}) are NEVER hardcoded or committed:
+ * {@code application.properties} reads them from environment variables
+ * ({@code AMADEUS_API_KEY}, {@code AMADEUS_API_SECRET}). The integration is
+ * {@code enabled = false} by default, so the app starts without any keys and nothing
+ * changes until you turn it on.
  *
- * <p>{@code baseUrl} apunta al entorno de pruebas gratuito de Amadeus; el día que
- * pases a producción, solo cambia esa URL.
+ * <p>{@code baseUrl} points to the free Amadeus test environment. Going to production
+ * only means changing that URL.
  */
 @ConfigurationProperties(prefix = "torii.amadeus")
 public record AmadeusProperties(
@@ -26,12 +26,12 @@ public record AmadeusProperties(
         @DefaultValue("5") int maxResults
 ) {
 
-    /** Valores por defecto, útiles para construir la configuración en tests. */
+    /** Default values, handy for building the config in tests. */
     public static AmadeusProperties defaults() {
         return new AmadeusProperties(false, "https://test.api.amadeus.com", "", "", "EUR", 5);
     }
 
-    /** Copia con otra baseUrl (cómodo en tests para apuntar al servidor simulado). */
+    /** Copy with a different baseUrl (used in tests to point at the mock server). */
     public AmadeusProperties withBaseUrl(String newBaseUrl) {
         return new AmadeusProperties(enabled, newBaseUrl, apiKey, apiSecret, currency, maxResults);
     }

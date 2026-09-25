@@ -14,15 +14,15 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * Seguridad de la API: sin sesiones ni cookies, solo tokens JWT.
+ * API security: no sessions or cookies, JWTs only.
  *
- * <p>Reglas:
+ * <p>Rules:
  * <ul>
- *   <li>{@code /api/auth/**} es público (registro y login).</li>
- *   <li>{@code /api/search} y {@code /api/price-history} son públicos: Torii se
- *       puede usar sin cuenta. Si la petición trae token, el controlador lo usa
- *       para asociar la búsqueda al usuario.</li>
- *   <li>{@code /api/me/**} requiere token válido (perfil, mis búsquedas...).</li>
+ *   <li>{@code /api/auth/**} is public (sign up and login).</li>
+ *   <li>{@code /api/search} and {@code /api/price-history} are public, Torii works
+ *       without an account. If the request has a token, the controller uses it to
+ *       link the search to the user.</li>
+ *   <li>{@code /api/me/**} needs a valid token (profile, my searches...).</li>
  * </ul>
  */
 @Configuration
@@ -38,26 +38,26 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                // Sin cookies de sesión no hay CSRF que proteger: el token viaja en
-                // la cabecera Authorization y un tercero no puede forzarla.
+                // No session cookies means no CSRF to protect against: the token goes
+                // in the Authorization header and a third party can't force that.
                 .csrf(csrf -> csrf.disable())
-                .cors(Customizer.withDefaults()) // usa el bean de CorsConfig
+                .cors(Customizer.withDefaults()) // picks up the CorsConfig bean
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/me/**").authenticated()
                         .anyRequest().permitAll())
-                // Valida el Bearer token de cada petición y expone el Jwt como principal.
+                // Validates the Bearer token on every request and exposes the Jwt as principal.
                 .oauth2ResourceServer(oauth -> oauth.jwt(Customizer.withDefaults()))
                 .build();
     }
 
-    /** Verificación de tokens con la MISMA clave simétrica con la que se firman. */
+    /** Verifies tokens with the SAME symmetric key they're signed with. */
     @Bean
     public JwtDecoder jwtDecoder() {
         return NimbusJwtDecoder.withSecretKey(JwtService.secretKey(jwtSecret)).build();
     }
 
-    /** BCrypt: hash lento y con sal, el estándar para contraseñas. */
+    /** BCrypt: slow salted hash, the usual choice for passwords. */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

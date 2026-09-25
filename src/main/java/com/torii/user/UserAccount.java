@@ -10,12 +10,11 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 
 /**
- * Cuenta de usuario (tabla {@code users}).
+ * User account ({@code users} table).
  *
- * <p>La contraseña NUNCA se guarda en claro: aquí solo vive su hash BCrypt
- * (irreversible; en el login se compara con {@code PasswordEncoder.matches}).
- * El plan es un string simple ("FREE", "PRO", "BUSINESS") hasta que la fase de
- * cuotas lo convierta en algo más rico.
+ * <p>The password is NEVER stored in plain text, only its BCrypt hash (one way, login
+ * compares it with {@code PasswordEncoder.matches}). The plan is stored as a plain
+ * string ("FREE", "PRO", "BUSINESS") and mapped to {@link Plan} when needed.
  */
 @Entity
 @Table(name = "users")
@@ -40,14 +39,14 @@ public class UserAccount {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    /** Constructor vacío exigido por JPA; no usar directamente. */
+    /** No-arg constructor required by JPA, don't use directly. */
     protected UserAccount() {}
 
     public UserAccount(String email, String passwordHash, String name) {
         this.email = email;
         this.passwordHash = passwordHash;
         this.name = name;
-        this.plan = "FREE"; // todo el mundo empieza en el plan gratuito
+        this.plan = "FREE"; // everyone starts on the free plan
         this.createdAt = Instant.now();
     }
 
@@ -75,7 +74,7 @@ public class UserAccount {
         return createdAt;
     }
 
-    /** Cambia el plan de la cuenta (hoy sin pagos; lo llama POST /api/me/plan). */
+    /** Changes the account plan (no payments yet, called from POST /api/me/plan). */
     public void changePlan(Plan newPlan) {
         this.plan = newPlan.name();
     }

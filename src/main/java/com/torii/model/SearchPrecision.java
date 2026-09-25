@@ -1,19 +1,18 @@
 package com.torii.model;
 
 /**
- * Precisión (granularidad) de la búsqueda: cada cuántos días se desliza la fecha de
- * salida al explorar el rango de vacaciones.
+ * Search precision: how many days the departure date slides forward on each step
+ * while exploring the holiday window.
  *
- * <p>Es el mando que controla el equilibrio entre <b>coste</b> (número de consultas
- * a la fuente de datos) y <b>cobertura</b> (probabilidad de encontrar la mejor
- * oferta absoluta). Saltar días reduce las consultas, pero puede dejar fuera el día
- * exacto más barato.
+ * <p>This is the knob between <b>cost</b> (number of calls to the data source) and
+ * <b>coverage</b> (chance of finding the absolute best offer). Skipping days means
+ * fewer calls, but the exact cheapest day might be skipped too.
  *
- * <p>Pensado también para el futuro modelo de negocio:
+ * <p>It also maps to the pricing plans:
  * <ul>
- *   <li>{@link #FAST}: versión gratuita — rápida y barata, buena pero no óptima.</li>
- *   <li>{@link #BALANCED}: término medio.</li>
- *   <li>{@link #EXHAUSTIVE}: versión de pago — explora día a día, máxima cobertura.</li>
+ *   <li>{@link #FAST}: free tier. Quick and cheap, good but not optimal.</li>
+ *   <li>{@link #BALANCED}: middle ground.</li>
+ *   <li>{@link #EXHAUSTIVE}: paid tier. Checks every single day, full coverage.</li>
  * </ul>
  */
 public enum SearchPrecision {
@@ -28,7 +27,7 @@ public enum SearchPrecision {
         this.dayStep = dayStep;
     }
 
-    /** Días que avanza la fecha de salida en cada iteración del algoritmo. */
+    /** Days the departure date moves forward on each iteration. */
     public int dayStep() {
         return dayStep;
     }

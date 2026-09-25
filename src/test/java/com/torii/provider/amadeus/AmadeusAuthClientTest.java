@@ -19,9 +19,9 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 /**
- * Test del cliente de token de Amadeus, contra un servidor HTTP simulado
- * ({@link MockRestServiceServer}). No hay red ni claves reales: comprobamos que pide
- * el token una vez y luego lo reutiliza de la caché.
+ * Amadeus token client test against a mock HTTP server ({@link MockRestServiceServer}).
+ * No network or real keys: checks it requests the token once and then reuses the
+ * cached one.
  */
 class AmadeusAuthClientTest {
 
@@ -36,16 +36,16 @@ class AmadeusAuthClientTest {
         String tokenJson = """
                 { "access_token": "ABC123", "token_type": "Bearer", "expires_in": 1799 }
                 """;
-        // Solo esperamos UNA llamada al endpoint de token.
+        // Expect exactly ONE call to the token endpoint.
         server.expect(once(), requestTo(endsWith("/v1/security/oauth2/token")))
                 .andExpect(method(HttpMethod.POST))
                 .andRespond(withSuccess(tokenJson, APPLICATION_JSON));
 
         String first = auth.currentToken();
-        String second = auth.currentToken(); // debe salir de la caché, sin nueva llamada
+        String second = auth.currentToken(); // should come from the cache, no new call
 
         assertThat(first).isEqualTo("ABC123");
         assertThat(second).isEqualTo("ABC123");
-        server.verify(); // falla si hubo más de una llamada HTTP
+        server.verify(); // fails if there was more than one HTTP call
     }
 }

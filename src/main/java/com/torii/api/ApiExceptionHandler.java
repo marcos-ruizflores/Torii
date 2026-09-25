@@ -9,16 +9,15 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.stream.Collectors;
 
 /**
- * Traduce los errores de validación a respuestas HTTP 400 legibles, en vez de
- * dejar que Spring devuelva un volcado interno.
+ * Turns validation errors into readable HTTP 400 responses instead of letting Spring
+ * return its internal dump.
  *
- * <p>Usa {@link ProblemDetail} (RFC 7807), el formato estándar de errores de la API
- * web de Spring.
+ * <p>Uses {@link ProblemDetail} (RFC 7807), Spring's standard error format.
  */
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
-    /** Errores de las anotaciones de Bean Validation (@NotBlank, @Min, etc.). */
+    /** Bean Validation annotation errors (@NotBlank, @Min, etc.). */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail onValidation(MethodArgumentNotValidException ex) {
         String detail = ex.getBindingResult().getFieldErrors().stream()
@@ -27,16 +26,16 @@ public class ApiExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail);
     }
 
-    /** Errores de las validaciones cruzadas de SearchRequestDto.toDomain(). */
+    /** Cross-field validation errors from SearchRequestDto.toDomain(). */
     @ExceptionHandler(IllegalArgumentException.class)
     public ProblemDetail onIllegalArgument(IllegalArgumentException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     /**
-     * Errores de negocio lanzados como ResponseStatusException (email duplicado 409,
-     * credenciales 401, cuota agotada 429...). Sin esto, Spring devuelve su error
-     * genérico SIN el mensaje, y el frontend no puede explicarle nada al usuario.
+     * Business errors thrown as ResponseStatusException (duplicate email 409, bad
+     * credentials 401, quota exceeded 429...). Without this Spring returns its generic
+     * error WITHOUT the message, and the frontend has nothing to show the user.
      */
     @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
     public ProblemDetail onResponseStatus(org.springframework.web.server.ResponseStatusException ex) {

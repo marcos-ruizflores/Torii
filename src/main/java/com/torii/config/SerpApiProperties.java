@@ -4,16 +4,15 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
 /**
- * Configuración del proveedor "Google Flights" a través de SerpApi, bajo el prefijo
- * {@code torii.serpapi}.
+ * Settings for the Google Flights provider through SerpApi, under the
+ * {@code torii.serpapi} prefix.
  *
- * <p>SerpApi es un intermediario que expone los resultados de Google Flights como API
- * (Google no ofrece una API pública propia). La autenticación es mucho más simple que
- * la de Amadeus: una única {@code apiKey} que viaja como parámetro de la URL, sin
- * OAuth ni tokens.
+ * <p>SerpApi sits in the middle and exposes Google Flights results as an API (Google
+ * doesn't have a public one). Auth is much simpler than Amadeus: a single
+ * {@code apiKey} passed as a URL param, no OAuth or tokens.
  *
- * <p>Como con Amadeus, la clave se lee de una variable de entorno
- * ({@code SERPAPI_KEY}) y la integración está deshabilitada por defecto.
+ * <p>Like Amadeus, the key comes from an env var ({@code SERPAPI_KEY}) and the
+ * integration is disabled by default.
  */
 @ConfigurationProperties(prefix = "torii.serpapi")
 public record SerpApiProperties(

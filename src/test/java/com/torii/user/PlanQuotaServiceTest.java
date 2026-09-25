@@ -19,8 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Tests de la cuota mensual por plan: FREE tiene 30 consultas/mes, gastar dentro
- * del límite acumula, pasarse rechaza con 429 sin descontar nada.
+ * Monthly quota tests: FREE gets 30 lookups/month, usage within the limit adds up,
+ * going over is rejected with a 429 without consuming anything.
  */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -55,7 +55,7 @@ class PlanQuotaServiceTest {
 
         PlanQuotaService.Usage usage = quota.usageOf(userId);
         assertThat(usage.used()).isEqualTo(25);
-        assertThat(usage.limit()).isEqualTo(30); // plan FREE
+        assertThat(usage.limit()).isEqualTo(30); // FREE plan
         assertThat(usage.plan()).isEqualTo("FREE");
     }
 
@@ -68,7 +68,7 @@ class PlanQuotaServiceTest {
                 .extracting(e -> ((ResponseStatusException) e).getStatusCode())
                 .isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
 
-        // El intento fallido no debe haber consumido nada.
+        // The failed attempt must not have consumed anything.
         assertThat(quota.usageOf(userId).used()).isEqualTo(25);
     }
 

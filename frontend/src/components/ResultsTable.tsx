@@ -5,28 +5,28 @@ import type { FlightOffer } from '../api/types'
 
 interface Props {
   offers: FlightOffer[]
-  /** Códigos IATA de la búsqueda (las ofertas no los repiten). */
+  /** IATA codes of the search (offers don't repeat them). */
   origin: string
   destination: string
 }
 
-/** "2026-09-03" → "3 sep". */
+/** "2026-09-03" -> "3 sep". */
 function shortDate(iso: string): string {
   return new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
 }
 
-/** "HH:mm:ss" → "HH:mm" (o "—" si la fuente no da la hora). */
+/** "HH:mm:ss" -> "HH:mm" (or a dash if the source has no time). */
 function shortTime(time: string | null): string {
   return time ? time.slice(0, 5) : '—'
 }
 
-/** Días de estancia entre ida y vuelta. */
+/** Days between outbound and return. */
 function durationDays(depart: string, ret: string): number {
   const ms = new Date(ret).getTime() - new Date(depart).getTime()
   return Math.round(ms / (1000 * 60 * 60 * 24))
 }
 
-/** Un tramo del viaje (ida o vuelta): hora, fecha y la línea origen → destino. */
+/** One leg of the trip (outbound or return): time, date and the origin -> destination line. */
 function Leg({
   time,
   date,
@@ -51,7 +51,7 @@ function Leg({
 
       <span className="w-11 shrink-0 text-sm font-semibold text-primary">{from}</span>
 
-      {/* La "línea de vuelo": recta si es directo, con puntos si hay escalas. */}
+      {/* Flight line: straight if direct, with dots for each stop. */}
       <div className="relative flex flex-1 items-center">
         <div className="h-px flex-1 bg-border-secondary" />
         {stops != null && stops > 0 && (
@@ -85,9 +85,8 @@ function Leg({
 }
 
 /**
- * Ofertas encontradas, al estilo Skyscanner: una tarjeta por oferta, con los dos
- * tramos (ida y vuelta) a la izquierda y el precio + reserva a la derecha.
- * El precio es SIEMPRE el total de ida y vuelta.
+ * Offers found, Skyscanner style: one card per offer, both legs on the left and
+ * price + booking on the right. The price is ALWAYS the round-trip total.
  */
 export function ResultsTable({ offers, origin, destination }: Props) {
   if (offers.length === 0) {
@@ -116,7 +115,7 @@ export function ResultsTable({ offers, origin, destination }: Props) {
               i === 0 ? 'ring-2 ring-brand' : 'ring-secondary'
             }`}
           >
-            {/* Tramos del viaje */}
+            {/* Trip legs */}
             <div className="flex flex-1 flex-col gap-4 p-5">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-primary">{o.airline}</span>
@@ -141,7 +140,7 @@ export function ResultsTable({ offers, origin, destination }: Props) {
               <Leg time={o.returnDepartureTime} date={o.returnDate} from={destination} to={origin} />
             </div>
 
-            {/* Precio y reserva */}
+            {/* Price and booking */}
             <div className="flex items-center justify-between gap-1 border-t border-secondary bg-secondary px-5 py-4 sm:w-52 sm:flex-col sm:items-end sm:justify-center sm:border-t-0 sm:border-l">
               <div className="text-right">
                 <div className="text-xl font-semibold text-primary">

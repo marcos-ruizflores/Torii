@@ -4,16 +4,16 @@ import { clearToken, getToken, saveToken } from '../api/http'
 import type { User } from '../api/types'
 
 /**
- * Estado de sesión de toda la app. El token JWT vive en localStorage (sobrevive a
- * recargas); el perfil se restaura al arrancar pidiendo /api/me con ese token.
+ * App-wide session state. The JWT lives in localStorage so it survives reloads, and
+ * the profile is restored on startup by calling /api/me with it.
  */
 interface AuthState {
-  /** Usuario con sesión iniciada, o null si es anónimo. */
+  /** Logged in user, or null when anonymous. */
   user: User | null
   login: (email: string, password: string) => Promise<void>
   signup: (name: string, email: string, password: string) => Promise<void>
   logout: () => void
-  /** Actualiza el perfil en memoria (p. ej. tras cambiar de plan). */
+  /** Updates the in-memory profile (e.g. after a plan change). */
   updateUser: (user: User) => void
 }
 
@@ -22,8 +22,8 @@ const AuthContext = createContext<AuthState | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
 
-  // Al cargar la app: si hay token guardado, intentamos restaurar la sesión.
-  // Si el token caducó o la cuenta ya no existe, se limpia y se sigue anónimo.
+  // On load, try to restore the session if there's a stored token. If it expired
+  // or the account is gone, clear it and carry on as anonymous.
   useEffect(() => {
     if (!getToken()) return
     authApi

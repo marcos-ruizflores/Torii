@@ -1,34 +1,34 @@
 # syntax=docker/dockerfile:1
 
-# ---------- Etapa 1: compilar el JAR ----------
-# Usamos una imagen con Maven + JDK 21 (la versión que fija el pom.xml). El build
-# ocurre DENTRO del contenedor, así no depende del Java instalado en tu máquina.
+# ---------- Stage 1: build the JAR ----------
+# Maven + JDK 21 image (the version pinned in pom.xml). The build runs INSIDE the
+# container so it doesn't depend on whatever Java is installed locally.
 FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
 
-# Copiamos primero solo los ficheros de dependencias para aprovechar la caché de
-# capas de Docker: si no cambian, no se vuelven a descargar en cada build.
+# Copy the dependency files first to take advantage of Docker layer caching: if
+# they don't change, dependencies aren't downloaded again on every build.
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
 RUN ./mvnw -B dependency:go-offline
 
-# Ahora el código y el empaquetado. Saltamos los tests en la imagen (se ejecutan
-# en tu máquina / CI); aquí solo queremos el artefacto lo más rápido posible.
+# Now the source and packaging. Tests are skipped here (they run locally / in CI),
+# we just want the artifact as fast as possible.
 COPY src/ src/
 RUN ./mvnw -B clean package -DskipTests
 
-# ---------- Etapa 2: imagen de ejecución ----------
-# Solo el runtime de Java (sin Maven ni código fuente): imagen final más ligera.
+# ---------- Stage 2: runtime image ----------
+# Just the Java runtime, no Maven or sources, so the final image is smaller.
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 
-# Un usuario sin privilegios en vez de root (buena práctica de seguridad).
+# Run as an unprivileged user instead of root.
 RUN useradd --system --uid 1001 torii
 USER torii
 
-# Copiamos el JAR ya compilado desde la etapa anterior.
+# Grab the built JAR from the previous stage.
 COPY --from=build /app/target/torii-*.jar app.jar
 
-# Railway inyecta la variable PORT; application.properties la lee (${PORT:8080}).
+# Railway injects PORT, application.properties reads it (${PORT:8080}).
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

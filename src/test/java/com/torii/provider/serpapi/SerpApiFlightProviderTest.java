@@ -25,9 +25,9 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 /**
- * Test del proveedor SerpApi (Google Flights) contra un servidor HTTP simulado.
- * Verifica el mapeo de best_flights + other_flights a {@link FlightOffer} y que un
- * 429 se traduce en cuota agotada para que el failover lo aparque.
+ * SerpApi (Google Flights) provider test against a mock HTTP server. Checks that
+ * best_flights + other_flights map to {@link FlightOffer} and that a 429 becomes
+ * quota exceeded so the failover parks it.
  */
 class SerpApiFlightProviderTest {
 
@@ -83,7 +83,7 @@ class SerpApiFlightProviderTest {
         FlightOffer other = offers.get(1);
         assertThat(other.airline()).isEqualTo("Lufthansa");
         assertThat(other.price()).isEqualByComparingTo("480");
-        assertThat(other.stops()).isEqualTo(1); // una escala (un layover)
+        assertThat(other.stops()).isEqualTo(1); // one stop (one layover)
         assertThat(other.departureTime()).isEqualTo(LocalTime.of(6, 30));
         assertThat(other.stopovers()).containsExactly("FRA");
 

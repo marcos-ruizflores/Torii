@@ -13,12 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Registro y login de usuarios.
+ * User sign up and login.
  *
- * <p>Registro: guarda la cuenta con la contraseña hasheada (BCrypt) y devuelve un
- * token, de modo que registrarse deja al usuario ya logueado. Login: comprueba el
- * hash y emite token. En ambos errores se responde sin dar pistas de más (no se
- * distingue "email no existe" de "contraseña incorrecta").
+ * <p>Sign up stores the account with a BCrypt password hash and returns a token, so
+ * the user is logged in right away. Login checks the hash and issues a token. Errors
+ * don't give away more than needed ("unknown email" and "wrong password" look the
+ * same).
  */
 @Service
 public class AuthService {

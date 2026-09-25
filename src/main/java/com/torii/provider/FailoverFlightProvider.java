@@ -13,28 +13,27 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Motor de búsqueda con conmutación por error (failover) sobre varias fuentes.
+ * Failover over several flight data sources.
  *
- * <p>Materializa la idea de "usar varias APIs de confianza y, cuando una se agota,
- * seguir con la siguiente". Es a su vez un {@link FlightProvider}, así que el resto
- * del sistema (caché, algoritmo) lo trata como a cualquier otra fuente — no sabe que
- * por dentro hay varias.
+ * <p>The idea: use a few APIs we trust and, when one runs out of quota, move on to
+ * the next. It's also a {@link FlightProvider}, so the cache and the algorithm treat
+ * it like any other source without knowing there are several behind it.
  *
- * <p>Comportamiento en cada consulta:
+ * <p>On each lookup:
  * <ol>
- *   <li>Recorre los proveedores <b>en el orden dado</b> (los primeros, preferidos).</li>
- *   <li>Salta los que están en periodo de enfriamiento por haber agotado su cuota.</li>
- *   <li>Si un proveedor responde, devuelve su resultado sin tocar a los demás.</li>
- *   <li>Si lanza {@link ProviderQuotaExceededException}, lo "aparca" durante un
- *       {@code cooldown} y prueba el siguiente.</li>
- *   <li>Si lanza {@link FlightProviderException} (fallo temporal), prueba el
- *       siguiente sin aparcarlo.</li>
- *   <li>Si ninguno responde, lanza {@link FlightProviderException}.</li>
+ *   <li>Go through the providers <b>in the given order</b> (first ones are preferred).</li>
+ *   <li>Skip the ones that are cooling down after running out of quota.</li>
+ *   <li>If a provider answers, return that and don't touch the rest.</li>
+ *   <li>If it throws {@link ProviderQuotaExceededException}, park it for
+ *       {@code cooldown} and try the next one.</li>
+ *   <li>If it throws {@link FlightProviderException} (temporary failure), try the next
+ *       one without parking it.</li>
+ *   <li>If nobody answers, throw {@link FlightProviderException}.</li>
  * </ol>
  *
- * <p>El estado de "aparcados" se comparte entre consultas (es un bean único): así,
- * una vez Amadeus agota su cuota, las siguientes cientos de consultas de la misma
- * búsqueda no vuelven a intentarlo, van directas a la siguiente API.
+ * <p>The parked state is shared across lookups (this is a singleton bean). Once
+ * Amadeus runs out of quota, the next few hundred lookups of the same search don't
+ * bother trying it again and go straight to the next API.
  */
 public class FailoverFlightProvider implements FlightProvider {
 
@@ -44,7 +43,7 @@ public class FailoverFlightProvider implements FlightProvider {
     private final Clock clock;
     private final Duration cooldown;
 
-    /** Proveedor (por nombre) → instante hasta el que está aparcado por cuota agotada. */
+    /** Provider name -> instant until which it's parked for running out of quota. */
     private final Map<String, Instant> parkedUntil = new ConcurrentHashMap<>();
 
     public FailoverFlightProvider(List<FlightProvider> providers, Clock clock, Duration cooldown) {
@@ -65,7 +64,7 @@ public class FailoverFlightProvider implements FlightProvider {
 
         for (FlightProvider provider : providers) {
             if (isParked(provider, now)) {
-                continue; // sabemos que está agotado; ni lo intentamos
+                continue; // we know it's out of quota, don't even try
             }
             try {
                 return provider.searchOffers(origin, destination, departDate, returnDate, maxStops);

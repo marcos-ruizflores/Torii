@@ -6,15 +6,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /**
- * Subconjunto de la respuesta del endpoint {@code /roundtrip} de FlightAPI.io.
+ * The part of the FlightAPI.io {@code /roundtrip} response we use.
  *
- * <p>A diferencia de SerpApi (que devuelve cada resultado "autocontenido"), FlightAPI
- * usa el modelo <b>normalizado</b> de Skyscanner: las listas se referencian entre sí
- * por IDs para no repetir datos. Un {@code itinerary} apunta a sus {@code legs} (ida y
- * vuelta) por {@code leg_ids}; cada leg apunta a aerolíneas ({@code carriers}) y
- * aeropuertos ({@code places}) por IDs numéricos. Para mapearlo a nuestro
- * {@link com.torii.model.FlightOffer} hay que "resolver" esas referencias con mapas
- * id → objeto, como una mini base de datos en memoria.
+ * <p>Unlike SerpApi, where each result is self-contained, FlightAPI uses Skyscanner's
+ * <b>normalized</b> model: lists reference each other by ID to avoid repeating data.
+ * An {@code itinerary} points to its {@code legs} (outbound and return) through
+ * {@code leg_ids}, and each leg points to {@code carriers} and {@code places} by
+ * numeric ID. To map it to our {@link com.torii.model.FlightOffer} those references
+ * get resolved with id -> object maps, kind of like a tiny in-memory database.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record FlightApiRoundTripResponse(
@@ -24,7 +23,7 @@ public record FlightApiRoundTripResponse(
         List<Place> places
 ) {
 
-    /** Una combinación concreta de ida + vuelta, con su precio más barato. */
+    /** A specific outbound + return combination with its cheapest price. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Itinerary(
             String id,
@@ -33,11 +32,11 @@ public record FlightApiRoundTripResponse(
             @JsonProperty("cheapest_price") Price cheapestPrice
     ) {}
 
-    /** Una oferta de una agencia (OTA) para el itinerario, con su enlace de reserva. */
+    /** One agency (OTA) offer for the itinerary, with its booking link. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record PricingOption(Price price, List<Item> items) {}
 
-    /** El {@code url} es un deep-link RELATIVO de Skyscanner (empieza por "/"). */
+    /** {@code url} is a RELATIVE Skyscanner deep link (starts with "/"). */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Item(String url, Price price) {}
 
@@ -45,8 +44,8 @@ public record FlightApiRoundTripResponse(
     public record Price(Double amount) {}
 
     /**
-     * Un trayecto completo (la ida o la vuelta). {@code stop_ids} es una lista de
-     * listas: los IDs de los aeropuertos de escala, agrupados por parada.
+     * A full leg (outbound or return). {@code stop_ids} is a list of lists: stopover
+     * airport IDs grouped by stop.
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Leg(
@@ -57,7 +56,7 @@ public record FlightApiRoundTripResponse(
             @JsonProperty("stop_ids") List<List<Long>> stopIds
     ) {}
 
-    /** Aerolínea. Los IDs de carrier de Skyscanner suelen ser números negativos. */
+    /** Airline. Skyscanner carrier IDs are usually negative numbers. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Carrier(
             Long id,
@@ -66,8 +65,8 @@ public record FlightApiRoundTripResponse(
     ) {}
 
     /**
-     * Aeropuerto/ciudad. El código IATA puede venir en {@code display_code} o en
-     * {@code alt_id} según la versión de la respuesta, por eso guardamos ambos.
+     * Airport or city. The IATA code can show up in {@code display_code} or in
+     * {@code alt_id} depending on the response version, so we keep both.
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Place(
@@ -77,7 +76,7 @@ public record FlightApiRoundTripResponse(
             String name
     ) {
 
-        /** Mejor código disponible para mostrar como escala. */
+        /** Best available code to display as a stopover. */
         public String bestCode() {
             if (displayCode != null && !displayCode.isBlank()) return displayCode;
             if (altId != null && !altId.isBlank()) return altId;

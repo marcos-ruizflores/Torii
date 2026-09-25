@@ -7,8 +7,8 @@ import { Input } from '@/components/base/input/input'
 import { useAuth } from '../auth/AuthContext'
 
 /**
- * Inicio de sesión contra POST /api/auth/login. Si va bien, el token queda
- * guardado (AuthContext) y volvemos al buscador ya con sesión.
+ * Login against POST /api/auth/login. On success the token is stored (AuthContext)
+ * and we go back to the search page logged in.
  */
 export function Login() {
   const navigate = useNavigate()

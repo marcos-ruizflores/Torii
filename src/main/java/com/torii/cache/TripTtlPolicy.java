@@ -8,20 +8,17 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 /**
- * Decide cuánto tiempo vive en caché el precio de un viaje según lo cerca que esté
- * la fecha de salida.
+ * Decides how long a trip price stays cached based on how close the departure is.
  *
- * <p>Es la idea central de la caché de Torii: el precio de un vuelo a 6 meses vista
- * apenas cambia de un día para otro, así que podemos guardarlo mucho tiempo; pero el
- * precio de un vuelo dentro de 3 días puede moverse en horas, así que conviene
- * refrescarlo pronto.
+ * <p>This is the main idea behind the cache: a flight 6 months out barely changes
+ * price from one day to the next, so it can be kept for a long time. A flight in 3
+ * days can move within hours, so it should be refreshed soon.
  *
- * <p>Los umbrales y duraciones ya no están escritos a fuego: vienen de
- * {@link CacheProperties} (prefijo {@code torii.cache.ttl}), de modo que se pueden
- * ajustar sin recompilar.
+ * <p>Thresholds and durations come from {@link CacheProperties}
+ * ({@code torii.cache.ttl} prefix), so they can be tuned without recompiling.
  *
- * <p>Sigue siendo <b>lógica pura</b>: recibe "hoy" como parámetro y devuelve una
- * {@link Duration}, lo que la hace trivial de testear.
+ * <p>Still <b>pure logic</b>: takes "today" as a parameter and returns a
+ * {@link Duration}, which makes it trivial to test.
  */
 @Component
 public class TripTtlPolicy {
@@ -33,8 +30,8 @@ public class TripTtlPolicy {
     }
 
     /**
-     * Calcula el TTL para un viaje cuya salida es {@code departDate}, visto desde
-     * {@code today}, según los tramos configurados.
+     * TTL for a trip departing on {@code departDate}, seen from {@code today}, based
+     * on the configured tiers.
      */
     public Duration ttlFor(LocalDate departDate, LocalDate today) {
         long daysUntilDeparture = ChronoUnit.DAYS.between(today, departDate);

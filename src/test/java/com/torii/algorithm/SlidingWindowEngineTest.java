@@ -16,11 +16,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.withinPercentage;
 
 /**
- * Tests del motor de ventana deslizante usando el provider mock (determinista).
+ * Sliding window engine tests using the (deterministic) mock provider.
  *
- * <p>Comprueban las garantías del algoritmo, no precios concretos: que respeta
- * topN, que el resultado está ordenado por precio, que toda oferta cabe dentro del
- * rango y respeta las duraciones pedidas, y que es reproducible.
+ * <p>They check the algorithm's guarantees rather than specific prices: topN is
+ * respected, results are sorted by price, every offer fits in the range with the
+ * requested lengths, and runs are reproducible.
  */
 class SlidingWindowEngineTest {
 
@@ -29,7 +29,7 @@ class SlidingWindowEngineTest {
             new SlidingWindowEngine(new MockFlightProvider(), CONCURRENCY);
 
     private SearchRequest sampleRequest() {
-        // Rango Jul–Sep, estancia base 14 días, variabilidad 3 (→ 14..17), top 5.
+        // Jul-Sep range, 14 day base stay, variability 3 (so 14..17), top 5.
         return new SearchRequest(
                 "BCN", "NRT",
                 LocalDate.of(2026, 7, 1),
@@ -78,7 +78,7 @@ class SlidingWindowEngineTest {
 
     @Test
     void fastHaceMenosConsultasQueExhaustive() {
-        // Provider que cuenta cuántas veces se le llama de verdad.
+        // Provider that counts how many real calls it gets.
         AtomicInteger callsFast = new AtomicInteger();
         AtomicInteger callsExhaustive = new AtomicInteger();
 
@@ -88,7 +88,7 @@ class SlidingWindowEngineTest {
         fastEngine.findBestOffers(withPrecision(SearchPrecision.FAST));
         exhaustiveEngine.findBestOffers(withPrecision(SearchPrecision.EXHAUSTIVE));
 
-        // FAST salta de 3 en 3 días → en torno a un tercio de las consultas.
+        // FAST steps 3 days at a time -> roughly a third of the lookups.
         assertThat(callsFast.get()).isLessThan(callsExhaustive.get());
         assertThat(callsFast.get()).isCloseTo(callsExhaustive.get() / 3, withinPercentage(20));
     }
@@ -118,7 +118,7 @@ class SlidingWindowEngineTest {
         }
     }
 
-    /** FlightProvider que delega en el mock pero cuenta las llamadas. */
+    /** FlightProvider that delegates to the mock but counts the calls. */
     private FlightProvider countingProvider(AtomicInteger counter) {
         MockFlightProvider mock = new MockFlightProvider();
         return (origin, destination, depart, ret, maxStops) -> {

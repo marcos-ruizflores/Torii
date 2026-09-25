@@ -6,28 +6,27 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Abstracción de "de dónde salen los datos de vuelos".
+ * Abstraction over "where the flight data comes from".
  *
- * <p>Esta interfaz es la decisión de diseño más importante de Torii: todo el resto
- * del sistema (algoritmo, servicio, API) depende de este contrato y NO de una fuente
- * concreta. Hoy la implementa {@link MockFlightProvider} (datos falsos y
- * deterministas); mañana podremos añadir un {@code AmadeusFlightProvider} sin tocar
- * ni una línea del algoritmo.
+ * <p>This is the most important design decision in Torii: the rest of the system
+ * (algorithm, service, API) depends on this contract and NOT on a specific source.
+ * The mock, Amadeus, SerpApi and FlightAPI providers all implement it, and adding a
+ * new one doesn't touch a single line of the algorithm.
  *
- * <p>Cada llamada representa una consulta de un único par de fechas (ida y vuelta).
- * El algoritmo de ventana deslizante invocará este método muchas veces.
+ * <p>Each call is a lookup for one pair of dates (outbound and return). The sliding
+ * window algorithm calls this many times per search.
  */
 public interface FlightProvider {
 
     /**
-     * Busca ofertas de ida y vuelta para un par de fechas concreto.
+     * Looks up round-trip offers for a specific pair of dates.
      *
-     * @param origin      código IATA de origen (ej. "BCN")
-     * @param destination código IATA de destino (ej. "NRT")
-     * @param departDate  fecha de ida
-     * @param returnDate  fecha de vuelta
-     * @param maxStops    número máximo de escalas aceptadas
-     * @return lista de ofertas encontradas (puede estar vacía si no hay vuelos)
+     * @param origin      origin IATA code (e.g. "BCN")
+     * @param destination destination IATA code (e.g. "NRT")
+     * @param departDate  outbound date
+     * @param returnDate  return date
+     * @param maxStops    max number of stops allowed
+     * @return offers found (empty if there are no flights)
      */
     List<FlightOffer> searchOffers(
             String origin,
@@ -38,8 +37,8 @@ public interface FlightProvider {
     );
 
     /**
-     * Nombre legible del proveedor, para logs y para que el motor de failover sepa
-     * a quién está saltando o deshabilitando. Por defecto, el nombre de la clase.
+     * Human readable provider name, used in logs and by the failover engine to track
+     * which provider it's skipping or parking. Defaults to the class name.
      */
     default String name() {
         return getClass().getSimpleName();

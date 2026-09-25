@@ -8,8 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * Historial de búsquedas: guarda cada búsqueda (anónima o de un usuario) y sirve
- * las últimas de cada cuenta para "Mis últimas búsquedas".
+ * Search history: stores every search (anonymous or from a user) and serves each
+ * account's latest ones for "recent searches".
  */
 @Service
 public class SearchHistoryService {
@@ -20,13 +20,13 @@ public class SearchHistoryService {
         this.repository = repository;
     }
 
-    /** Guarda la búsqueda. {@code userId} null = búsqueda anónima. */
+    /** Stores the search. A null {@code userId} means anonymous. */
     @Transactional
     public void record(SearchRequest request, Long userId, int queriesUsed) {
         repository.save(new SearchRecord(userId, request, queriesUsed));
     }
 
-    /** Las últimas {@code limit} búsquedas del usuario, la más reciente primero. */
+    /** User's last {@code limit} searches, newest first. */
     @Transactional(readOnly = true)
     public List<SavedSearchDto> recentSearches(Long userId, int limit) {
         return repository.findByUserIdOrderByCreatedAtDesc(userId, PageRequest.of(0, limit)).stream()

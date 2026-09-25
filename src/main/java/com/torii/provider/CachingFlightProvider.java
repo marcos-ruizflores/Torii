@@ -12,22 +12,20 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Decorador que añade una caché Caffeine por delante de OTRO {@link FlightProvider}.
+ * Decorator that puts a Caffeine cache in front of ANOTHER {@link FlightProvider}.
  *
- * <p>Patrón decorador: implementa la misma interfaz que envuelve, así que para el
- * resto del sistema es "un FlightProvider más". Hoy envuelve al
- * {@link MockFlightProvider}; el día que tengamos {@code AmadeusFlightProvider} lo
- * envolverá a él sin cambiar nada aquí. Ni el algoritmo ni Amadeus saben que la
- * caché existe.
+ * <p>It implements the same interface it wraps, so for the rest of the system it's
+ * just one more FlightProvider. Neither the algorithm nor the real providers know
+ * the cache is there.
  *
- * <p>La clave de caché es el par de fechas concreto, de modo que el mismo día de
- * salida/vuelta se reutiliza entre búsquedas distintas. El TTL de cada entrada lo
- * decide {@link TripTtlPolicy} según la cercanía de la fecha de salida (caducidad
- * variable por entrada — por eso usamos Caffeine directamente y no @Cacheable).
+ * <p>The cache key is the exact date pair, so the same outbound/return days get
+ * reused across different searches. Each entry's TTL comes from
+ * {@link TripTtlPolicy} based on how close the departure date is. Since the TTL is
+ * per entry, this uses Caffeine directly instead of @Cacheable.
  */
 public class CachingFlightProvider implements FlightProvider {
 
-    /** Clave de caché: identifica unívocamente una consulta a la fuente. */
+    /** Cache key: uniquely identifies one lookup against the source. */
     private record CacheKey(
             String origin,
             String destination,
@@ -45,8 +43,8 @@ public class CachingFlightProvider implements FlightProvider {
         this.delegate = delegate;
         this.clock = clock;
         this.cache = Caffeine.newBuilder()
-                .maximumSize(maximumSize)   // tope de entradas (configurable); expulsa las menos usadas
-                .recordStats()              // habilita hits/misses para poder observar el efecto
+                .maximumSize(maximumSize)   // configurable cap, evicts the least used entries
+                .recordStats()              // track hits/misses so we can see if it's worth it
                 .expireAfter(new TripExpiry(ttlPolicy))
                 .build();
     }
@@ -58,14 +56,14 @@ public class CachingFlightProvider implements FlightProvider {
 
         CacheKey key = new CacheKey(origin, destination, departDate, returnDate, maxStops);
 
-        // get(key, mappingFunction): si está en caché lo devuelve; si no, ejecuta la
-        // función (llamada real al delegate), guarda el resultado y lo devuelve.
-        // Es atómico: dos hilos pidiendo la misma clave no disparan dos llamadas.
+        // get(key, mappingFunction) returns the cached value, or calls the delegate,
+        // stores the result and returns it. It's atomic, so two threads asking for
+        // the same key won't trigger two real calls.
         return cache.get(key, k ->
                 delegate.searchOffers(origin, destination, departDate, returnDate, maxStops));
     }
 
-    /** Estadísticas de la caché (hits, misses, tamaño) para observabilidad. */
+    /** Cache stats (hits, misses, size) for monitoring. */
     public CacheStats stats() {
         return cache.stats();
     }
@@ -75,9 +73,9 @@ public class CachingFlightProvider implements FlightProvider {
     }
 
     /**
-     * Traduce la {@link TripTtlPolicy} al contrato de caducidad de Caffeine.
-     * El TTL se fija al CREAR la entrada y no se renueva al leerla ni actualizarla
-     * (queremos refrescar el precio pasado su tiempo, no mantenerlo vivo por uso).
+     * Adapts {@link TripTtlPolicy} to Caffeine's Expiry contract. The TTL is set when
+     * the entry is CREATED and never extended on read or update: we want prices to be
+     * refreshed after a while, not kept alive just because they're popular.
      */
     private final class TripExpiry implements Expiry<CacheKey, List<FlightOffer>> {
 
@@ -95,13 +93,13 @@ public class CachingFlightProvider implements FlightProvider {
         @Override
         public long expireAfterUpdate(CacheKey key, List<FlightOffer> value,
                                       long currentTime, long currentDuration) {
-            return currentDuration; // conservar el TTL ya calculado
+            return currentDuration; // keep the TTL we already computed
         }
 
         @Override
         public long expireAfterRead(CacheKey key, List<FlightOffer> value,
                                     long currentTime, long currentDuration) {
-            return currentDuration; // leer no prolonga la vida
+            return currentDuration; // reads don't extend the lifetime
         }
     }
 }

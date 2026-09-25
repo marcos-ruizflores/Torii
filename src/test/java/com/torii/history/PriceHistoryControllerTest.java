@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Contrato HTTP del histórico: parámetros normalizados y forma del JSON. */
+/** HTTP contract for price history: normalized params and JSON shape. */
 @WebMvcTest(PriceHistoryController.class)
 @Import({SecurityConfig.class, CorsConfig.class})
 class PriceHistoryControllerTest {
@@ -35,7 +35,7 @@ class PriceHistoryControllerTest {
         when(service.history("BCN", "NRT", 365)).thenReturn(List.of(
                 new PricePointDto(LocalDate.of(2026, 7, 3), new BigDecimal("795.00"), "EUR")));
 
-        // Códigos en minúscula y days fuera de rango: el controlador los normaliza.
+        // Lowercase codes and out of range days: the controller normalizes them.
         mvc.perform(get("/api/price-history")
                         .param("origin", "bcn")
                         .param("destination", "nrt")
@@ -45,6 +45,6 @@ class PriceHistoryControllerTest {
                 .andExpect(jsonPath("$[0].price").value(795.00))
                 .andExpect(jsonPath("$[0].currency").value("EUR"));
 
-        verify(service).history("BCN", "NRT", 365); // 9999 → tope de 365
+        verify(service).history("BCN", "NRT", 365); // 9999 -> capped at 365
     }
 }

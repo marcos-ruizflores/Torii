@@ -6,8 +6,8 @@ import { Input } from '@/components/base/input/input'
 import { useAuth } from '../auth/AuthContext'
 
 /**
- * Registro contra POST /api/auth/signup: crea la cuenta (plan Gratis) y deja al
- * usuario ya logueado (el backend devuelve el token junto al perfil).
+ * Sign up against POST /api/auth/signup: creates the account on the free plan and
+ * logs the user in straight away (the backend returns the token with the profile).
  */
 export function SignUp() {
   const navigate = useNavigate()

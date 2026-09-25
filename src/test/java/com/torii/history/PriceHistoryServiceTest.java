@@ -3,7 +3,7 @@ package com.torii.history;
 import com.torii.model.FlightOffer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-// Spring Boot 4: las anotaciones de test por capas viven en módulos propios.
+// Spring Boot 4: test slice annotations live in their own modules.
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -20,17 +20,17 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Tests del histórico de precios contra la H2 en memoria (con las migraciones de
- * Flyway aplicadas, como en producción). Verifica el "upsert" del mejor precio del
- * día y que las ofertas del mock no contaminan el histórico.
+ * Price history tests against in-memory H2 (with the Flyway migrations applied, same
+ * as prod). Checks the upsert of the day's best price and that mock offers don't
+ * pollute the history.
  */
 @DataJpaTest
-// No sustituyas mi datasource: usa la H2 modo-PostgreSQL de application.properties de test.
+// Don't replace the datasource, use the PostgreSQL-mode H2 from the test application.properties.
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import(PriceHistoryService.class)
 class PriceHistoryServiceTest {
 
-    /** Reloj fijo: los tests no dependen de la hora real. */
+    /** Fixed clock so tests don't depend on the real time. */
     private static final LocalDate TODAY = LocalDate.of(2026, 7, 4);
 
     @TestConfiguration
@@ -68,15 +68,15 @@ class PriceHistoryServiceTest {
     @Test
     void soloActualizaSiElNuevoPrecioEsMasBarato() {
         service.recordObservation("BCN", "NRT", List.of(offer("800.00", "https://www.skyscanner.net/x")));
-        // Segunda búsqueda del mismo día, más cara: NO debe pisar el 800.
+        // Second search on the same day, more expensive: must NOT overwrite the 800.
         service.recordObservation("BCN", "NRT", List.of(offer("850.00", "https://www.skyscanner.net/x")));
-        // Tercera, más barata: SÍ actualiza.
+        // Third one is cheaper: this one DOES update.
         service.recordObservation("BCN", "NRT", List.of(offer("790.00", "https://www.skyscanner.net/x")));
 
         PriceHistoryEntry entry = repository
                 .findByOriginAndDestinationAndDay("BCN", "NRT", TODAY).orElseThrow();
         assertThat(entry.getBestPrice()).isEqualByComparingTo("790.00");
-        assertThat(repository.count()).isEqualTo(1); // sigue habiendo UNA fila por (ruta, día)
+        assertThat(repository.count()).isEqualTo(1); // still ONE row per (route, day)
     }
 
     @Test
@@ -90,7 +90,7 @@ class PriceHistoryServiceTest {
     @Test
     void devuelveLaSerieOrdenadaYLimitadaPorDias() {
         repository.save(new PriceHistoryEntry("BCN", "NRT", TODAY.minusDays(40),
-                new BigDecimal("700.00"), "EUR", null)); // fuera de la ventana de 30 días
+                new BigDecimal("700.00"), "EUR", null)); // outside the 30 day window
         repository.save(new PriceHistoryEntry("BCN", "NRT", TODAY.minusDays(3),
                 new BigDecimal("810.00"), "EUR", null));
         repository.save(new PriceHistoryEntry("BCN", "NRT", TODAY.minusDays(1),

@@ -5,9 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-/** Acceso a la tabla {@code searches}. */
+/** Access to the {@code searches} table. */
 public interface SearchRecordRepository extends JpaRepository<SearchRecord, Long> {
 
-    /** Las búsquedas más recientes de un usuario (el Pageable pone el tope). */
+    /** A user's most recent searches (the Pageable sets the limit). */
     List<SearchRecord> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 }

@@ -4,27 +4,26 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * Petición de búsqueda ya validada y lista para el dominio.
+ * A validated search request, ready for the domain layer.
  *
- * <p>Representa lo que el usuario pide a Torii:
+ * <p>What the user is asking Torii for:
  * <ul>
- *   <li>{@code origin} / {@code destination}: códigos IATA (ej. "BCN", "NRT").</li>
- *   <li>{@code rangeStart} / {@code rangeEnd}: la ventana de vacaciones posible
- *       (ej. 1 de julio – 30 de septiembre).</li>
- *   <li>{@code baseDuration}: días que se quiere estar (ej. 14).</li>
- *   <li>{@code variability}: cuánto se permite alargar la estancia. Con base 14 y
- *       variabilidad 3 se exploran duraciones de 14, 15, 16 y 17 días.</li>
- *   <li>{@code maxStops}: número máximo de escalas aceptadas.</li>
- *   <li>{@code topN}: cuántas mejores ofertas devolver.</li>
- *   <li>{@code precision}: granularidad de la exploración (ver {@link SearchPrecision}).</li>
- *   <li>{@code maxPrice}: presupuesto máximo opcional ({@code null} = sin límite). Se
- *       aplica como filtro en el algoritmo, NO en la llamada a la API, para que la
- *       caché siga siendo reutilizable entre distintos presupuestos.</li>
+ *   <li>{@code origin} / {@code destination}: IATA codes (e.g. "BCN", "NRT").</li>
+ *   <li>{@code rangeStart} / {@code rangeEnd}: the possible holiday window
+ *       (e.g. July 1 to September 30).</li>
+ *   <li>{@code baseDuration}: how many days the user wants to stay (e.g. 14).</li>
+ *   <li>{@code variability}: how much longer the stay can be. Base 14 with
+ *       variability 3 explores 14, 15, 16 and 17 day trips.</li>
+ *   <li>{@code maxStops}: max number of stops allowed.</li>
+ *   <li>{@code topN}: how many offers to return.</li>
+ *   <li>{@code precision}: how fine-grained the search is (see {@link SearchPrecision}).</li>
+ *   <li>{@code maxPrice}: optional budget ({@code null} means no limit). It's applied
+ *       as a filter in the algorithm, NOT in the API call, so the cache can still be
+ *       reused across different budgets.</li>
  * </ul>
  *
- * <p>Es un {@code record}: inmutable y sin lógica. Las reglas de validación viven
- * en el DTO de entrada ({@code SearchRequestDto}), de modo que el dominio siempre
- * trabaja con datos ya correctos.
+ * <p>Plain immutable {@code record} with no logic. Validation lives in the input DTO
+ * ({@code SearchRequestDto}), so the domain always gets clean data.
  */
 public record SearchRequest(
         String origin,
@@ -39,9 +38,8 @@ public record SearchRequest(
         BigDecimal maxPrice
 ) {
     /**
-     * Constructor de conveniencia con precisión {@link SearchPrecision#EXHAUSTIVE}
-     * por defecto y sin límite de precio. Mantiene compatibilidad con el código (y
-     * tests) anterior a esos campos.
+     * Convenience constructor: {@link SearchPrecision#EXHAUSTIVE} precision and no
+     * price limit. Keeps code and tests written before those fields compiling.
      */
     public SearchRequest(String origin, String destination,
                          LocalDate rangeStart, LocalDate rangeEnd,
@@ -50,7 +48,7 @@ public record SearchRequest(
                 baseDuration, variability, maxStops, topN, SearchPrecision.EXHAUSTIVE, null);
     }
 
-    /** Constructor de conveniencia con precisión explícita y sin límite de precio. */
+    /** Convenience constructor with an explicit precision and no price limit. */
     public SearchRequest(String origin, String destination,
                          LocalDate rangeStart, LocalDate rangeEnd,
                          int baseDuration, int variability, int maxStops, int topN,
@@ -59,12 +57,12 @@ public record SearchRequest(
                 baseDuration, variability, maxStops, topN, precision, null);
     }
 
-    /** Duración mínima a explorar (la base). */
+    /** Shortest trip length to explore (the base). */
     public int minDuration() {
         return baseDuration;
     }
 
-    /** Duración máxima a explorar (base + variabilidad). */
+    /** Longest trip length to explore (base + variability). */
     public int maxDuration() {
         return baseDuration + variability;
     }

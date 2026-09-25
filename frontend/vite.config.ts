@@ -7,15 +7,15 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
-    // Alias "@/..." → src/. Lo usan los componentes de Untitled UI en sus imports.
+    // "@/..." alias -> src/. The Untitled UI components use it in their imports.
     alias: {
       '@': path.resolve(__dirname, 'src'),
     },
   },
   server: {
-    // En desarrollo, el servidor de Vite (:5173) reenvía cualquier petición que
-    // empiece por /api al backend de Spring Boot (:8080). Así el frontend habla con
-    // "/api/search" como si fuera el mismo origen y nos ahorramos configurar CORS.
+    // In dev the Vite server (:5173) forwards anything under /api to the Spring
+    // Boot backend (:8080). The frontend calls "/api/search" as if it were the same
+    // origin, so no CORS setup is needed locally.
     proxy: {
       '/api': {
         target: 'http://localhost:8080',

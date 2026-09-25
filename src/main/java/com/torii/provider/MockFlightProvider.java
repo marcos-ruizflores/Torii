@@ -13,20 +13,20 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Implementación FALSA de {@link FlightProvider} para desarrollar y probar el
- * algoritmo sin depender de ninguna API externa.
+ * FAKE {@link FlightProvider} for developing and testing the algorithm without
+ * depending on any external API.
  *
- * <p>Genera precios <b>deterministas</b>: para un mismo par de fechas siempre
- * devuelve el mismo resultado. Esto tiene dos ventajas grandes:
+ * <p>Prices are <b>deterministic</b>: the same date pair always returns the same
+ * result. Two big wins from that:
  * <ul>
- *   <li>Los tests del algoritmo son reproducibles.</li>
- *   <li>Cuando metamos caché (Caffeine/Redis) más adelante, podremos comprobar de
- *       verdad que un acierto de caché devuelve lo mismo que la fuente.</li>
+ *   <li>Algorithm tests are reproducible.</li>
+ *   <li>We can actually check that a cache hit returns the same thing as the
+ *       source.</li>
  * </ul>
  *
- * <p>Además simula un poco de realismo: la estacionalidad encarece agosto, salir en
- * fin de semana sube el precio, y más escalas abaratan. Nada de esto es real, pero
- * hace que el "top 5" del algoritmo se vea creíble durante el desarrollo.
+ * <p>It also fakes a bit of realism: August is more expensive, weekend departures
+ * cost more and extra stops make it cheaper. None of it is real, but it makes the
+ * top 5 look believable during development.
  */
 @Component
 public class MockFlightProvider implements FlightProvider {
@@ -35,7 +35,7 @@ public class MockFlightProvider implements FlightProvider {
             "Iberia", "Vueling", "Ryanair", "Lufthansa", "Air France", "KLM"
     };
 
-    /** Aeropuertos "hub" típicos para simular escalas. */
+    /** Common hub airports used to fake stopovers. */
     private static final String[] HUBS = {"CDG", "FRA", "AMS", "IST", "DXB", "DOH"};
 
     @Override
@@ -46,24 +46,23 @@ public class MockFlightProvider implements FlightProvider {
             LocalDate returnDate,
             int maxStops
     ) {
-        // Semilla determinista a partir de los datos de la consulta: mismas fechas,
-        // mismo resultado siempre.
+        // Seed derived from the query itself: same dates, same result every time.
         long seed = (origin + destination + departDate + returnDate).hashCode();
         Random rng = new Random(seed);
 
         List<FlightOffer> offers = new ArrayList<>();
-        int howMany = 2 + rng.nextInt(3); // entre 2 y 4 ofertas por par de fechas
+        int howMany = 2 + rng.nextInt(3); // 2 to 4 offers per date pair
 
         for (int i = 0; i < howMany; i++) {
-            int stops = rng.nextInt(maxStops + 1); // de 0 a maxStops escalas
+            int stops = rng.nextInt(maxStops + 1); // 0 to maxStops stops
             String airline = AIRLINES[rng.nextInt(AIRLINES.length)];
             BigDecimal price = fakePrice(departDate, stops, rng);
 
-            // Horas de salida simuladas, ida y vuelta (entre las 6:00 y las 22:00).
+            // Fake departure times for both legs, between 6:00 and 22:00.
             LocalTime departureTime = LocalTime.of(6 + rng.nextInt(16), rng.nextBoolean() ? 0 : 30);
             LocalTime returnDepartureTime = LocalTime.of(6 + rng.nextInt(16), rng.nextBoolean() ? 0 : 30);
 
-            // Aeropuertos de escala simulados (tantos como "stops").
+            // Fake stopover airports, one per stop.
             List<String> stopovers = new ArrayList<>();
             for (int s = 0; s < stops; s++) {
                 stopovers.add(HUBS[rng.nextInt(HUBS.length)]);
@@ -81,21 +80,21 @@ public class MockFlightProvider implements FlightProvider {
     }
 
     /**
-     * Precio simulado con un poco de "física" de mercado:
-     * base + estacionalidad (agosto caro) + recargo de fin de semana − descuento por escalas.
+     * Fake price with some rough market logic:
+     * base + seasonality (August is pricey) + weekend surcharge - discount per stop.
      */
     private BigDecimal fakePrice(LocalDate departDate, int stops, Random rng) {
-        double base = 180 + rng.nextInt(120); // 180–299 €
+        double base = 180 + rng.nextInt(120); // 180-299 EUR
 
-        // Estacionalidad: agosto (mes 8) es el más caro; cuanto más lejos de agosto, más barato.
+        // Seasonality: August (month 8) is the most expensive, the further away the cheaper.
         int monthDistanceToAugust = Math.abs(departDate.getMonthValue() - 8);
-        double seasonal = (4 - Math.min(4, monthDistanceToAugust)) * 60; // hasta +240 € en agosto
+        double seasonal = (4 - Math.min(4, monthDistanceToAugust)) * 60; // up to +240 EUR in August
 
-        // Salir en viernes/sábado encarece.
+        // Leaving on Friday or Saturday costs more.
         DayOfWeek dow = departDate.getDayOfWeek();
         double weekend = (dow == DayOfWeek.FRIDAY || dow == DayOfWeek.SATURDAY) ? 45 : 0;
 
-        // Cada escala abarata (vuelos directos son más caros).
+        // Each stop makes it cheaper (direct flights cost more).
         double stopsDiscount = stops * 35;
 
         double total = Math.max(39, base + seasonal + weekend - stopsDiscount);

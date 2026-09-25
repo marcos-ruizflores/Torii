@@ -1,15 +1,15 @@
 package com.torii.provider;
 
 /**
- * Indica que un {@link FlightProvider} no ha podido atender una consulta.
+ * Thrown when a {@link FlightProvider} couldn't handle a lookup.
  *
- * <p>Es la señal que el {@link FailoverFlightProvider} captura para pasar al
- * siguiente proveedor. Representa un fallo <b>temporal o recuperable</b> (timeout,
- * error 5xx, respuesta inesperada): conviene reintentar con otra fuente, pero no hay
- * motivo para dar por agotado a este proveedor.
+ * <p>{@link FailoverFlightProvider} catches it to move on to the next provider. It
+ * means a <b>temporary or recoverable</b> failure (timeout, 5xx, unexpected
+ * response): worth retrying with another source, but no reason to treat this
+ * provider as exhausted.
  *
- * <p>Cada proveedor real (p. ej. el futuro {@code AmadeusFlightProvider}) debe
- * traducir sus errores a esta excepción, para que el motor de failover los entienda.
+ * <p>Every real provider should map its own errors to this exception so the
+ * failover logic can understand them.
  */
 public class FlightProviderException extends RuntimeException {
 

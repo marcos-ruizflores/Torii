@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-/** DTOs del API de autenticación, agrupados para no dispersar 4 mini-ficheros. */
+/** Auth API DTOs, grouped here instead of four tiny files. */
 public final class AuthDtos {
 
     private AuthDtos() {}
@@ -22,7 +22,7 @@ public final class AuthDtos {
             @NotBlank String password
     ) {}
 
-    /** Perfil público del usuario: lo que el frontend puede saber de una cuenta. */
+    /** Public user profile: what the frontend is allowed to know about an account. */
     public record UserDto(Long id, String name, String email, String plan) {
 
         public static UserDto from(UserAccount user) {
@@ -30,6 +30,6 @@ public final class AuthDtos {
         }
     }
 
-    /** Respuesta de login/registro: el token y el perfil, para no pedir /api/me extra. */
+    /** Login/sign up response: token plus profile, saves an extra call to /api/me. */
     public record AuthResponse(String token, UserDto user) {}
 }

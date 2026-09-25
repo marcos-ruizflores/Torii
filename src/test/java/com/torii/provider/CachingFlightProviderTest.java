@@ -15,8 +15,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Tests del decorador de caché. Usamos un delegate "espía" que cuenta cuántas veces
- * se le llama de verdad, para comprobar que la caché ahorra esas llamadas.
+ * Tests for the cache decorator. Uses a spy delegate that counts how many real calls
+ * it gets, to check the cache is actually saving them.
  */
 class CachingFlightProviderTest {
 
@@ -24,7 +24,7 @@ class CachingFlightProviderTest {
             Clock.fixed(LocalDate.of(2026, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant(),
                     ZoneId.systemDefault());
 
-    /** FlightProvider falso que cuenta llamadas y devuelve siempre una oferta. */
+    /** Fake FlightProvider that counts calls and always returns one offer. */
     private static class CountingProvider implements FlightProvider {
         final AtomicInteger calls = new AtomicInteger();
 
@@ -49,8 +49,8 @@ class CachingFlightProviderTest {
         List<FlightOffer> first = caching.searchOffers("BCN", "NRT", depart, ret, 1);
         List<FlightOffer> second = caching.searchOffers("BCN", "NRT", depart, ret, 1);
 
-        assertThat(source.calls.get()).isEqualTo(1);   // solo una llamada real
-        assertThat(second).isEqualTo(first);            // mismo resultado
+        assertThat(source.calls.get()).isEqualTo(1);   // only one real call
+        assertThat(second).isEqualTo(first);            // same result
         assertThat(caching.stats().hitCount()).isEqualTo(1);
         assertThat(caching.stats().missCount()).isEqualTo(1);
     }
@@ -64,6 +64,6 @@ class CachingFlightProviderTest {
         caching.searchOffers("BCN", "NRT", LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 15), 1);
         caching.searchOffers("BCN", "NRT", LocalDate.of(2026, 7, 2), LocalDate.of(2026, 7, 16), 1);
 
-        assertThat(source.calls.get()).isEqualTo(2);   // fechas distintas → dos llamadas
+        assertThat(source.calls.get()).isEqualTo(2);   // different dates -> two calls
     }
 }

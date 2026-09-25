@@ -12,11 +12,11 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Histórico de precios: el mejor precio observado por día y ruta.
+ * Price history: best price seen per day and route.
  *
- * <p>Se alimenta solo: cada búsqueda que devuelve ofertas reales registra (o
- * mejora) el precio del día. Con el uso normal de Torii, el gráfico del frontend
- * se va llenando gratis, sin llamadas extra a las APIs.
+ * <p>It fills itself up: every search that returns real offers records (or improves)
+ * that day's price. Just by using Torii normally the frontend chart gets populated
+ * for free, no extra API calls.
  */
 @Service
 public class PriceHistoryService {
@@ -32,11 +32,11 @@ public class PriceHistoryService {
     }
 
     /**
-     * Registra la mejor oferta de una búsqueda como observación de HOY para la ruta.
-     * Si ya había una observación hoy, solo la sustituye si esta es más barata.
+     * Records the best offer of a search as TODAY's observation for the route. If
+     * there's already one for today, it's only replaced when this one is cheaper.
      *
-     * <p>Las ofertas del {@link com.torii.provider.MockFlightProvider} se ignoran:
-     * son precios inventados y contaminarían el histórico real.
+     * <p>Offers from {@link com.torii.provider.MockFlightProvider} are ignored, they're
+     * made-up prices and would pollute the real history.
      */
     @Transactional
     public void recordObservation(String origin, String destination, List<FlightOffer> offers) {
@@ -45,7 +45,7 @@ public class PriceHistoryService {
                 .min(Comparator.comparing(FlightOffer::price))
                 .orElse(null);
         if (best == null) {
-            return; // sin ofertas reales, no hay nada que registrar
+            return; // no real offers, nothing to record
         }
 
         LocalDate today = LocalDate.now(clock);
@@ -61,7 +61,7 @@ public class PriceHistoryService {
                 origin, destination, best.price(), best.currency(), today);
     }
 
-    /** Serie de los últimos {@code days} días para el gráfico del frontend. */
+    /** Last {@code days} days of data for the frontend chart. */
     @Transactional(readOnly = true)
     public List<PricePointDto> history(String origin, String destination, int days) {
         LocalDate from = LocalDate.now(clock).minusDays(days - 1L);
@@ -72,12 +72,12 @@ public class PriceHistoryService {
                 .toList();
     }
 
-    /** Las ofertas del mock llevan su URL de ejemplo: no son precios de verdad. */
+    /** Mock offers carry the example.com URL, they're not real prices. */
     private static boolean isMockOffer(FlightOffer offer) {
         return offer.bookingUrl() != null && offer.bookingUrl().contains("example.com");
     }
 
-    /** Deducción simple de la fuente a partir del enlace de reserva. */
+    /** Rough guess of the source based on the booking link. */
     private static String providerFromBookingUrl(String bookingUrl) {
         if (bookingUrl == null) return null;
         if (bookingUrl.contains("skyscanner")) return "FlightAPI";

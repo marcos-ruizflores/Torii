@@ -15,17 +15,15 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 /**
- * Objeto de entrada de la API (lo que llega en el JSON del POST).
+ * API input object (the JSON body of the POST).
  *
- * <p>Aquí —y solo aquí— viven las reglas de validación de formato. El dominio
- * ({@link SearchRequest}) confía en que cualquier cosa que reciba ya está validada.
- * Esta separación DTO ↔ dominio es una buena práctica que conviene coger desde el
- * principio: la API puede cambiar de forma (campos, nombres) sin arrastrar al
- * dominio.
+ * <p>Format validation lives here and only here. The domain ({@link SearchRequest})
+ * assumes whatever it receives is already valid. Keeping the DTO separate from the
+ * domain means the API shape (fields, names) can change without dragging the domain
+ * along.
  *
- * <p>Las validaciones cruzadas que una anotación no puede expresar (p. ej.
- * "rangeEnd posterior a rangeStart" o "que quepa al menos una estancia en el rango")
- * se comprueban en {@link #toDomain()}.
+ * <p>Cross-field checks that an annotation can't express (e.g. "rangeEnd after
+ * rangeStart" or "at least one stay fits in the range") are done in {@link #toDomain()}.
  */
 public record SearchRequestDto(
 
@@ -61,27 +59,27 @@ public record SearchRequestDto(
         @Max(value = 50, message = "topN no puede superar 50")
         int topN,
 
-        // Opcional. Si no se envía, se usa EXHAUSTIVE (máxima cobertura).
-        // Valores admitidos: FAST, BALANCED, EXHAUSTIVE.
+        // Optional, defaults to EXHAUSTIVE (full coverage).
+        // Allowed values: FAST, BALANCED, EXHAUSTIVE.
         String precision,
 
-        // Opcional. Presupuesto máximo: descarta ofertas por encima de este precio.
-        // null/ausente = sin límite. Se aplica como filtro, no afecta al nº de llamadas.
+        // Optional budget: drops offers above this price. null/missing means no limit.
+        // Applied as a filter, so it doesn't change the number of calls.
         @Positive(message = "maxPrice debe ser un número positivo")
         BigDecimal maxPrice
 ) {
     /**
-     * Convierte el DTO en el objeto de dominio, aplicando las validaciones cruzadas
-     * que las anotaciones no cubren.
+     * Maps the DTO to the domain object, running the cross-field checks the
+     * annotations can't cover.
      *
-     * @throws IllegalArgumentException si el rango es incoherente
+     * @throws IllegalArgumentException if the range doesn't make sense
      */
     public SearchRequest toDomain() {
         if (!rangeEnd.isAfter(rangeStart)) {
             throw new IllegalArgumentException("rangeEnd debe ser posterior a rangeStart");
         }
         long rangeDays = ChronoUnit.DAYS.between(rangeStart, rangeEnd);
-        // La estancia más larga a explorar debe caber dentro del rango.
+        // The longest stay we explore has to fit inside the range.
         if (baseDuration + variability >= rangeDays) {
             throw new IllegalArgumentException(
                     "El rango de vacaciones es demasiado corto para una estancia de "
@@ -94,8 +92,8 @@ public record SearchRequestDto(
     }
 
     /**
-     * Traduce el texto {@code precision} al enum, con un mensaje claro si no es
-     * válido. Si viene vacío o nulo, se usa {@link SearchPrecision#EXHAUSTIVE}.
+     * Parses {@code precision} into the enum with a clear message when it's invalid.
+     * Empty or null means {@link SearchPrecision#EXHAUSTIVE}.
      */
     private SearchPrecision parsePrecision() {
         if (precision == null || precision.isBlank()) {

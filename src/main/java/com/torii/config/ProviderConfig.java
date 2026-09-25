@@ -23,20 +23,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Aquí "montamos las piezas": le decimos a Spring cómo construir el grafo de
- * proveedores de vuelos.
+ * Wires up the flight provider chain.
  *
- * <p>El grafo final es: <b>Caché → Failover → [proveedores reales activos, Mock]</b>.
+ * <p>The final graph is <b>Cache -> Failover -> [enabled real providers, Mock]</b>.
  * <ul>
- *   <li>La <b>caché</b> ({@link CachingFlightProvider}, {@code @Primary}) es lo que
- *       recibe el algoritmo; evita repetir llamadas.</li>
- *   <li>El <b>failover</b> ({@link FailoverFlightProvider}) prueba los proveedores en
- *       orden y, si uno agota su cuota, pasa al siguiente.</li>
- *   <li>Cada proveedor real (Amadeus, SerpApi) se incluye solo si está
- *       {@code enabled=true} en la configuración.</li>
- *   <li>El {@link MockFlightProvider} va siempre el último, como red de seguridad:
- *       nunca falla, así que la app siempre devuelve algo aunque no haya APIs reales
- *       configuradas o todas estén agotadas.</li>
+ *   <li>The <b>cache</b> ({@link CachingFlightProvider}, {@code @Primary}) is what the
+ *       algorithm gets injected. Avoids repeating calls.</li>
+ *   <li>The <b>failover</b> ({@link FailoverFlightProvider}) tries providers in order
+ *       and moves on to the next one when a provider runs out of quota.</li>
+ *   <li>Each real provider (Amadeus, SerpApi, FlightAPI) is only added when it's
+ *       {@code enabled=true} in the config.</li>
+ *   <li>{@link MockFlightProvider} always goes last as a safety net. It never fails,
+ *       so the app always returns something even with no real APIs configured or all
+ *       of them out of quota.</li>
  * </ul>
  */
 @Configuration
@@ -46,12 +45,12 @@ public class ProviderConfig {
 
     private static final Logger log = LoggerFactory.getLogger(ProviderConfig.class);
 
-    /** Tiempo que el failover aparca a un proveedor tras agotar su cuota. */
+    /** How long the failover parks a provider after it runs out of quota. */
     private static final Duration FAILOVER_COOLDOWN = Duration.ofMinutes(5);
 
     /**
-     * Reloj del sistema como bean, para que la política de TTL y el failover puedan
-     * calcular "ahora". Tenerlo como bean permite inyectar un reloj fijo en tests.
+     * System clock as a bean so the TTL policy and the failover can get "now". Being a
+     * bean means tests can inject a fixed clock.
      */
     @Bean
     public Clock clock() {
@@ -59,10 +58,9 @@ public class ProviderConfig {
     }
 
     /**
-     * El proveedor con caché, que envuelve al motor de failover. {@code @Primary}
-     * hace que sea el que reciba el algoritmo. El tipo de retorno es
-     * {@code CachingFlightProvider} (no la interfaz) para poder inyectarlo también en
-     * el controlador de estadísticas.
+     * Cached provider wrapping the failover chain. {@code @Primary} makes it the one
+     * the algorithm receives. The return type is {@code CachingFlightProvider} rather
+     * than the interface so it can also be injected into the stats controller.
      */
     @Bean
     @Primary
@@ -82,13 +80,13 @@ public class ProviderConfig {
             providers.add(new SerpApiFlightProvider(RestClient.builder(), serpApiProps));
             log.info("Proveedor Google Flights (SerpApi) ACTIVADO");
         }
-        // FlightAPI va DESPUÉS de SerpApi: su cuota gratis es una prueba única
-        // (~20 llamadas), así que lo reservamos como respaldo cuando SerpApi se agote.
+        // FlightAPI goes AFTER SerpApi: its free quota is a one-off trial (~20 calls),
+        // so keep it as a fallback for when SerpApi runs out.
         if (flightApiProps.enabled()) {
             providers.add(new FlightApiFlightProvider(RestClient.builder(), flightApiProps));
             log.info("Proveedor FlightAPI ACTIVADO");
         }
-        providers.add(mock); // red de seguridad: siempre el último y nunca falla
+        providers.add(mock); // safety net: always last, never fails
 
         log.info("Motor de búsqueda con {} proveedor(es): {}",
                 providers.size(), providers.stream().map(FlightProvider::name).toList());

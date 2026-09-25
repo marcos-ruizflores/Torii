@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Formatea la respuesta de POST /api/search en una tabla legible.
+Formats the POST /api/search response as a readable table.
 
-Lo usa buscar-oferta.sh: recibe el código HTTP como argumento y el cuerpo de la
-respuesta por stdin. Está en un archivo aparte (en vez de incrustado en el bash)
-para evitar problemas de escape y poder leerlo/editarlo con comodidad.
+Used by buscar-oferta.sh: gets the HTTP status as an argument and the response body
+on stdin. It lives in its own file instead of inline in the bash script to avoid
+escaping headaches and keep it easy to edit.
 """
 import json
 import sys
@@ -19,7 +19,7 @@ except json.JSONDecodeError:
     print(f"Respuesta no-JSON (HTTP {http_code}):\n{raw}")
     sys.exit(0)
 
-# La API devuelve un objeto (ProblemDetail) cuando hay error de validación.
+# The API returns an object (ProblemDetail) on validation errors.
 if isinstance(data, dict):
     detalle = data.get("detail", data)
     print(f"❌  Error HTTP {http_code}: {detalle}")

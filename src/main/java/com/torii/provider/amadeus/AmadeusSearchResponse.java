@@ -5,16 +5,16 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 
 /**
- * Subconjunto de la respuesta de búsqueda de Amadeus
- * ({@code GET /v2/shopping/flight-offers}) que nos interesa.
+ * The part of the Amadeus search response ({@code GET /v2/shopping/flight-offers})
+ * we actually use.
  *
- * <p>La respuesta real es enorme; aquí modelamos solo lo necesario para construir un
- * {@link com.torii.model.FlightOffer}: precio, trayectos (itinerarios con sus
- * segmentos) y la aerolínea validante. Todo lo demás se ignora.
+ * <p>The real response is huge. This only models what's needed to build a
+ * {@link com.torii.model.FlightOffer}: price, itineraries with their segments and
+ * the validating airline. Everything else is ignored.
  *
- * <p>Estructura: {@code data} es la lista de ofertas. Cada oferta tiene un
- * {@code price} y una lista de {@code itineraries} (ida y vuelta); cada itinerario
- * tiene {@code segments} (cada segmento es un vuelo; varios segmentos = escalas).
+ * <p>Shape: {@code data} is the list of offers. Each offer has a {@code price} and a
+ * list of {@code itineraries} (outbound and return), and each itinerary has
+ * {@code segments} (one segment per flight, several segments means stops).
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record AmadeusSearchResponse(List<Offer> data) {

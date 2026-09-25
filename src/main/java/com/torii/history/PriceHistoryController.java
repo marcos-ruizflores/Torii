@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Histórico de precios de una ruta, para el gráfico del frontend:
+ * Price history for a route, feeds the frontend chart:
  * {@code GET /api/price-history?origin=BCN&destination=NRT&days=30}.
  */
 @RestController
@@ -27,7 +27,7 @@ public class PriceHistoryController {
             @RequestParam String destination,
             @RequestParam(defaultValue = "30") int days) {
 
-        // Normalización defensiva: mismos límites que tiene el gráfico (7-365 días).
+        // Clamp defensively, the chart itself only goes from 7 to 365 days.
         int clampedDays = Math.max(1, Math.min(days, 365));
         return service.history(origin.toUpperCase(), destination.toUpperCase(), clampedDays);
     }

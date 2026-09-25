@@ -6,14 +6,14 @@ interface Props {
   destination: string
 }
 
-// TopoJSON del mundo servido por un CDN (patrón habitual de react-simple-maps).
+// World TopoJSON from a CDN (the usual react-simple-maps setup).
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 
 /**
- * Mapa del mundo que dibuja la ruta origen → destino de la búsqueda actual.
+ * World map drawing the origin -> destination route of the current search.
  *
- * Resuelve las coordenadas de cada código IATA con el diccionario local de
- * aeropuertos. Si alguno no está en el diccionario, avisa en lugar de romperse.
+ * Coordinates come from the local airport lookup. If a code isn't in there it shows
+ * a notice instead of breaking.
  */
 export function RouteMap({ origin, destination }: Props) {
   const from = lookupAirport(origin)
@@ -65,7 +65,7 @@ export function RouteMap({ origin, destination }: Props) {
           }
         </Geographies>
 
-        {/* Línea de la ruta entre los dos aeropuertos. */}
+        {/* Route line between the two airports. */}
         <Line
           from={from.coordinates}
           to={to.coordinates}
@@ -74,7 +74,7 @@ export function RouteMap({ origin, destination }: Props) {
           strokeLinecap="round"
         />
 
-        {/* Marcador de origen (azul). */}
+        {/* Origin marker (blue). */}
         <Marker coordinates={from.coordinates}>
           <circle r={5} fill="#228be6" stroke="#fff" strokeWidth={1.5} />
           <text textAnchor="middle" y={-10} fontSize={11} fontWeight={700} fill="#228be6">
@@ -82,7 +82,7 @@ export function RouteMap({ origin, destination }: Props) {
           </text>
         </Marker>
 
-        {/* Marcador de destino (rojo). */}
+        {/* Destination marker (red). */}
         <Marker coordinates={to.coordinates}>
           <circle r={5} fill="#fa5252" stroke="#fff" strokeWidth={1.5} />
           <text textAnchor="middle" y={-10} fontSize={11} fontWeight={700} fill="#fa5252">

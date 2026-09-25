@@ -18,14 +18,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Test de integración del flujo completo de autenticación, con la app entera
- * levantada sobre H2: registro → búsqueda CON token → "mis búsquedas" la contiene.
- * También verifica los dos contratos de seguridad: /api/me sin token es 401 y la
- * búsqueda anónima sigue funcionando.
+ * Integration test for the full auth flow with the whole app running on H2:
+ * sign up -> search WITH token -> "my searches" contains it. Also checks the two
+ * security contracts: /api/me without a token is 401 and anonymous search still works.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Transactional // cada test deja la BD como estaba
+@Transactional // each test leaves the DB as it found it
 class AuthFlowIntegrationTest {
 
     @Autowired
@@ -44,7 +43,7 @@ class AuthFlowIntegrationTest {
 
     @Test
     void registroBusquedaConTokenYMisBusquedas() throws Exception {
-        // 1. Registro → token.
+        // 1. Sign up -> token.
         String authJson = mvc.perform(post("/api/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -55,25 +54,25 @@ class AuthFlowIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         String token = JsonPath.read(authJson, "$.token");
 
-        // 2. Búsqueda CON el token (el motor usa el MockFlightProvider: sin red).
+        // 2. Search WITH the token (the engine uses MockFlightProvider, no network).
         mvc.perform(post("/api/search")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(searchBody()))
                 .andExpect(status().isOk());
 
-        // El registro de la búsqueda ocurre en otra transacción lógica; forzamos
-        // visibilidad dentro del test.
+        // The search gets recorded in a separate logical transaction, so force it
+        // to be visible inside the test.
         TestTransaction.flagForCommit();
 
-        // 3. La búsqueda aparece en "mis búsquedas".
+        // 3. The search shows up in "my searches".
         mvc.perform(get("/api/me/searches").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].origin").value("BCN"))
                 .andExpect(jsonPath("$[0].destination").value("MAD"))
                 .andExpect(jsonPath("$[0].precision").value("EXHAUSTIVE"));
 
-        // 4. El perfil del token responde.
+        // 4. The token's profile endpoint answers.
         mvc.perform(get("/api/me").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("marcos@test.com"));
@@ -90,12 +89,12 @@ class AuthFlowIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         String token = JsonPath.read(authJson, "$.token");
 
-        // Nace en FREE (límite 30)...
+        // Starts on FREE (limit 30)...
         mvc.perform(get("/api/me/usage").header("Authorization", "Bearer " + token))
                 .andExpect(jsonPath("$.plan").value("FREE"))
                 .andExpect(jsonPath("$.limit").value(30));
 
-        // ...sube a PRO...
+        // ...upgrades to PRO...
         mvc.perform(post("/api/me/plan")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -103,11 +102,11 @@ class AuthFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.plan").value("PRO"));
 
-        // ...y la cuota pasa a 500.
+        // ...and the quota goes up to 500.
         mvc.perform(get("/api/me/usage").header("Authorization", "Bearer " + token))
                 .andExpect(jsonPath("$.limit").value(500));
 
-        // Un plan inventado se rechaza con 400.
+        // A made-up plan gets a 400.
         mvc.perform(post("/api/me/plan")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)

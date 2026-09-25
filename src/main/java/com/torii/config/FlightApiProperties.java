@@ -4,15 +4,15 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
 /**
- * Configuración del proveedor FlightAPI.io, bajo el prefijo {@code torii.flightapi}.
+ * FlightAPI.io provider settings, under the {@code torii.flightapi} prefix.
  *
- * <p>FlightAPI.io agrega precios de múltiples aerolíneas y agencias (datos estilo
- * Skyscanner). La autenticación es una única {@code apiKey}, pero a diferencia de
- * SerpApi viaja como <b>segmento del path</b> de la URL, no como query param:
- * {@code /roundtrip/<api-key>/<origen>/<destino>/...}.
+ * <p>FlightAPI.io aggregates prices from lots of airlines and agencies
+ * (Skyscanner-style data). Auth is a single {@code apiKey}, but unlike SerpApi it
+ * goes in the URL <b>path</b>, not as a query param:
+ * {@code /roundtrip/<api-key>/<origin>/<destination>/...}.
  *
- * <p>Como con el resto de proveedores, la clave se lee de una variable de entorno
- * ({@code FLIGHTAPI_KEY}) y la integración está deshabilitada por defecto.
+ * <p>Same as the other providers, the key comes from an env var
+ * ({@code FLIGHTAPI_KEY}) and the integration is disabled by default.
  */
 @ConfigurationProperties(prefix = "torii.flightapi")
 public record FlightApiProperties(

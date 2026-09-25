@@ -9,12 +9,12 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 /**
- * Endpoint de observabilidad de la caché: {@code GET /api/cache/stats}.
+ * Cache monitoring endpoint: {@code GET /api/cache/stats}.
  *
- * <p>Sirve para "ver" el efecto del paso 2. Tras una búsqueda, muchos pares de
- * fechas quedan cacheados; al repetir una búsqueda solapada, los aciertos (hits)
- * suben y las llamadas reales a la fuente (misses) no. En cada miss es donde, con
- * Amadeus, se gastaría una llamada de la cuota mensual.
+ * <p>Lets you actually see the cache working. After a search lots of date pairs are
+ * cached, so repeating an overlapping search bumps the hits while real calls to the
+ * source (misses) stay flat. Every miss is a call that would count against a real
+ * provider's monthly quota.
  */
 @RestController
 @RequestMapping("/api/cache")
@@ -32,7 +32,7 @@ public class CacheController {
         return Map.of(
                 "entradasEnCache", cachingProvider.estimatedSize(),
                 "hits", s.hitCount(),
-                "misses", s.missCount(),          // = llamadas reales a la fuente
+                "misses", s.missCount(),          // = real calls to the source
                 "hitRate", String.format("%.1f%%", s.hitRate() * 100),
                 "evictions", s.evictionCount()
         );

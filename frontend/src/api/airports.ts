@@ -1,11 +1,10 @@
-// Diccionario mínimo de aeropuertos: código IATA → coordenadas y nombre.
+// Small airport lookup: IATA code -> coordinates and name.
 //
-// El backend no devuelve coordenadas (su FlightOffer no las tiene), así que el mapa
-// las resuelve aquí a partir del código IATA que el usuario introdujo. Es un punto
-// de ampliación natural: el día de mañana, con datos reales, esto se sustituiría por
-// una base de datos de aeropuertos o un endpoint del propio backend.
+// The backend doesn't return coordinates (FlightOffer doesn't have them), so the map
+// resolves them here from the IATA code the user typed. Eventually this should be
+// replaced by a proper airport database or a backend endpoint.
 //
-// Las coordenadas son [longitud, latitud] (el orden que usa GeoJSON / react-simple-maps).
+// Coordinates are [longitude, latitude], the order GeoJSON / react-simple-maps use.
 
 export interface Airport {
   name: string
@@ -52,7 +51,7 @@ export const AIRPORTS: Record<string, Airport> = {
   SYD: { name: 'Sídney', coordinates: [151.1772, -33.9399] },
 }
 
-/** Devuelve el aeropuerto si lo conocemos, o undefined. */
+/** Returns the airport if we know it, otherwise undefined. */
 export function lookupAirport(iata: string): Airport | undefined {
   return AIRPORTS[iata.toUpperCase()]
 }
