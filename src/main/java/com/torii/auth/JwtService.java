@@ -29,6 +29,9 @@ import java.time.Instant;
 @Service
 public class JwtService {
 
+    /** Password version the token was issued for, see SecurityConfig#jwtDecoder. */
+    static final String PASSWORD_VERSION_CLAIM = "pwc";
+
     static final String DEV_SECRET = "torii-dev-secret-cambiame-en-produccion-0123456789";
 
     private final NimbusJwtEncoder encoder;
@@ -52,6 +55,7 @@ public class JwtService {
                 .subject(String.valueOf(user.getId()))
                 .claim("email", user.getEmail())
                 .claim("name", user.getName())
+                .claim(PASSWORD_VERSION_CLAIM, user.passwordVersion())
                 .issuedAt(now)
                 .expiresAt(now.plus(ttl))
                 .build();

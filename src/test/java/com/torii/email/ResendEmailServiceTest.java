@@ -52,11 +52,11 @@ class ResendEmailServiceTest {
                 .andExpect(jsonPath("$.to[0]").value("marcos@example.com"))
                 .andExpect(jsonPath("$.subject", containsString("Marcos")))
                 .andExpect(jsonPath("$.html", allOf(containsString("Marcos"),
-                        containsString("href=\"https://www.toriitravel.com\""))))
+                        containsString("href=\"https://www.toriitravel.com/verificar-email?token=tok_123\""))))
                 .andExpect(jsonPath("$.text", containsString("https://www.toriitravel.com")))
                 .andRespond(withSuccess("{\"id\":\"abc-123\"}", APPLICATION_JSON));
 
-        service.sendWelcome("marcos@example.com", "Marcos");
+        service.sendWelcome("marcos@example.com", "Marcos", "tok_123");
 
         server.verify();
     }
@@ -66,7 +66,7 @@ class ResendEmailServiceTest {
         server.expect(requestTo("https://api.resend.com/emails"))
                 .andRespond(withStatus(HttpStatus.UNAUTHORIZED));
 
-        assertThatThrownBy(() -> service.sendWelcome("marcos@example.com", "Marcos"))
+        assertThatThrownBy(() -> service.sendWelcome("marcos@example.com", "Marcos", "tok_123"))
                 .isInstanceOf(RuntimeException.class);
     }
 
@@ -78,7 +78,23 @@ class ResendEmailServiceTest {
                 .andExpect(jsonPath("$.subject", not(containsString("\n"))))
                 .andRespond(withSuccess("{\"id\":\"abc-123\"}", APPLICATION_JSON));
 
-        service.sendWelcome("marcos@example.com", "<script>alert(1)</script>\nBcc: x@y.z");
+        service.sendWelcome("marcos@example.com", "<script>alert(1)</script>\nBcc: x@y.z", "tok_123");
+
+        server.verify();
+    }
+
+    @Test
+    void elCorreoDeRestablecerLlevaElEnlaceConElToken() {
+        server.expect(requestTo("https://api.resend.com/emails"))
+                .andExpect(jsonPath("$.to[0]").value("marcos@example.com"))
+                .andExpect(jsonPath("$.subject", containsString("contraseña")))
+                .andExpect(jsonPath("$.html",
+                        containsString("https://www.toriitravel.com/restablecer-contrasena?token=tok_456")))
+                .andExpect(jsonPath("$.text",
+                        containsString("https://www.toriitravel.com/restablecer-contrasena?token=tok_456")))
+                .andRespond(withSuccess("{\"id\":\"abc-123\"}", APPLICATION_JSON));
+
+        service.sendPasswordReset("marcos@example.com", "Marcos", "tok_456");
 
         server.verify();
     }

@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -38,11 +39,13 @@ public class MeController {
     private final SearchHistoryService searchHistory;
     private final PlanQuotaService quota;
     private final boolean planChangesEnabled;
+    private final AuthService authService;
 
     public MeController(UserRepository users, SearchHistoryService searchHistory,
-                        PlanQuotaService quota,
+                        PlanQuotaService quota, AuthService authService,
                         @Value("${torii.plans.self-service-changes:false}") boolean planChangesEnabled) {
         this.users = users;
+        this.authService = authService;
         this.searchHistory = searchHistory;
         this.quota = quota;
         this.planChangesEnabled = planChangesEnabled;
@@ -63,6 +66,13 @@ public class MeController {
                                            @RequestParam(defaultValue = "10") int limit) {
         int clamped = Math.max(1, Math.min(limit, 50));
         return searchHistory.recentSearches(Long.valueOf(jwt.getSubject()), clamped);
+    }
+
+    /** Emails a new verification link (at most one a minute). */
+    @PostMapping("/email/verification")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public void resendVerification(@AuthenticationPrincipal Jwt jwt) {
+        authService.resendVerification(Long.valueOf(jwt.getSubject()));
     }
 
     /** This month's quota: plan, limit (null = unlimited) and lookups used so far. */

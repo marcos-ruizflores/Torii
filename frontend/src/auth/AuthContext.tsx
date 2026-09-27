@@ -14,6 +14,8 @@ interface AuthState {
   restoring: boolean
   login: (email: string, password: string) => Promise<void>
   signup: (name: string, email: string, password: string) => Promise<void>
+  /** Redeems a reset link and logs in with the new password. */
+  resetPassword: (token: string, password: string) => Promise<void>
   logout: () => void
   /** Updates the in-memory profile (e.g. after a plan change). */
   updateUser: (user: User) => void
@@ -48,13 +50,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(user)
   }
 
+  async function resetPassword(token: string, password: string) {
+    const { token: jwt, user } = await authApi.resetPassword(token, password)
+    saveToken(jwt)
+    setUser(user)
+  }
+
   function logout() {
     clearToken()
     setUser(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, restoring, login, signup, logout, updateUser: setUser }}>
+    <AuthContext.Provider value={{ user, restoring, login, signup, resetPassword, logout, updateUser: setUser }}>
       {children}
     </AuthContext.Provider>
   )

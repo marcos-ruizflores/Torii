@@ -4,11 +4,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import { AuthProvider } from './auth/AuthContext.tsx'
 import App from './App.tsx'
+import { ForgotPassword } from './pages/ForgotPassword.tsx'
 import { Login } from './pages/Login.tsx'
 import { MySearches } from './pages/MySearches.tsx'
 import { NotFound } from './pages/NotFound.tsx'
 import { Pricing } from './pages/Pricing.tsx'
+import { ResetPassword } from './pages/ResetPassword.tsx'
 import { SignUp } from './pages/SignUp.tsx'
+import { VerifyEmail } from './pages/VerifyEmail.tsx'
 
 // Self-hosted Barlow (running text) and Barlow Semi Condensed (board glyphs).
 import '@fontsource/barlow/400.css'
@@ -33,6 +36,9 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/" element={<App />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/olvide-contrasena" element={<ForgotPassword />} />
+            <Route path="/restablecer-contrasena" element={<ResetPassword />} />
+            <Route path="/verificar-email" element={<VerifyEmail />} />
             <Route path="/planes" element={<Pricing />} />
             <Route path="/mis-busquedas" element={<MySearches />} />
             {/* Any unknown route falls through to the 404 page. */}

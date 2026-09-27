@@ -29,6 +29,43 @@ export async function login(email: string, password: string): Promise<AuthRespon
   }
 }
 
+/** Always resolves the same way, whether the email has an account or not. */
+export async function requestPasswordReset(email: string): Promise<void> {
+  try {
+    await http.post('/api/auth/password/forgot', { email })
+  } catch (err) {
+    throw new Error(messageFrom(err, 'No se pudo enviar el enlace'))
+  }
+}
+
+/** Sets the new password; the backend logs the user in and closes other sessions. */
+export async function resetPassword(token: string, password: string): Promise<AuthResponse> {
+  try {
+    const { data } = await http.post<AuthResponse>('/api/auth/password/reset', { token, password })
+    return data
+  } catch (err) {
+    throw new Error(messageFrom(err, 'No se pudo cambiar la contraseña'))
+  }
+}
+
+export async function verifyEmail(token: string): Promise<User> {
+  try {
+    const { data } = await http.post<User>('/api/auth/email/verify', { token })
+    return data
+  } catch (err) {
+    throw new Error(messageFrom(err, 'No se pudo confirmar el email'))
+  }
+}
+
+/** Emails a new verification link to the logged in user (at most one a minute). */
+export async function resendVerification(): Promise<void> {
+  try {
+    await http.post('/api/me/email/verification')
+  } catch (err) {
+    throw new Error(messageFrom(err, 'No se pudo reenviar el enlace'))
+  }
+}
+
 /** Profile of the stored token's owner. Fails if the token has expired. */
 export async function fetchMe(): Promise<User> {
   const { data } = await http.get<User>('/api/me')

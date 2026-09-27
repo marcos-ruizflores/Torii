@@ -67,6 +67,7 @@ export interface User {
   name: string
   email: string
   plan: 'FREE' | 'PRO' | 'BUSINESS'
+  emailVerified: boolean
 }
 
 /** Response of POST /api/auth/login and /api/auth/signup. */

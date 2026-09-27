@@ -38,7 +38,7 @@ public class EmailConfig {
         }
         log.info("Email deshabilitado (torii.email.enabled=false o sin RESEND_API_KEY): "
                 + "los correos solo se registrarán en el log.");
-        return new LoggingEmailService();
+        return new LoggingEmailService(props.appUrl());
     }
 
     /**

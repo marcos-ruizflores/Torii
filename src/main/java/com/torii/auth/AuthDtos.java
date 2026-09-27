@@ -23,12 +23,23 @@ public final class AuthDtos {
     ) {}
 
     /** Public user profile: what the frontend is allowed to know about an account. */
-    public record UserDto(Long id, String name, String email, String plan) {
+    public record UserDto(Long id, String name, String email, String plan, boolean emailVerified) {
 
         public static UserDto from(UserAccount user) {
-            return new UserDto(user.getId(), user.getName(), user.getEmail(), user.getPlan());
+            return new UserDto(user.getId(), user.getName(), user.getEmail(), user.getPlan(),
+                    user.isEmailVerified());
         }
     }
+
+    public record ForgotPasswordRequest(@NotBlank @Email(message = "email no válido") String email) {}
+
+    public record ResetPasswordRequest(
+            @NotBlank String token,
+            @NotBlank @Size(min = 8, message = "la contraseña debe tener al menos 8 caracteres")
+            String password
+    ) {}
+
+    public record VerifyEmailRequest(@NotBlank String token) {}
 
     /** Login/sign up response: token plus profile, saves an extra call to /api/me. */
     public record AuthResponse(String token, UserDto user) {}

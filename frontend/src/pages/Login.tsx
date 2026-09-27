@@ -55,14 +55,23 @@ export function Login() {
           value={email}
           onChange={setEmail}
         />
-        <Input
-          label="Contraseña"
-          type="password"
-          placeholder="Tu contraseña"
-          isRequired
-          value={password}
-          onChange={setPassword}
-        />
+        <div className="flex flex-col gap-1.5">
+          <Input
+            label="Contraseña"
+            type="password"
+            placeholder="Tu contraseña"
+            isRequired
+            value={password}
+            onChange={setPassword}
+          />
+          <Link
+            to="/olvide-contrasena"
+            state={{ email }}
+            className="self-end text-sm font-semibold text-brand-secondary hover:underline"
+          >
+            ¿Has olvidado la contraseña?
+          </Link>
+        </div>
 
         {error && (
           <p role="alert" className="rounded-lg bg-error-primary px-3 py-2 text-sm text-error-primary">

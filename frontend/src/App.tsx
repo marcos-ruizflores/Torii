@@ -6,6 +6,7 @@ import { AppHeader } from './components/board/AppHeader'
 import { SearchForm } from './components/SearchForm'
 import { ResultsBoard } from './components/ResultsTable'
 import { RecentSearches } from './components/RecentSearches'
+import { VerifyEmailNotice } from './components/VerifyEmailNotice'
 import { useAuth } from './auth/AuthContext'
 import { useSearch } from './hooks/useSearch'
 import { fetchMyUsage } from './api/authApi'
@@ -78,6 +79,7 @@ export default function App() {
     <div className="min-h-dvh bg-primary">
       <main className="mx-auto flex max-w-6xl flex-col gap-8 px-4 pt-6 pb-16 sm:px-6">
         <AppHeader />
+        {user && !user.emailVerified && <VerifyEmailNotice email={user.email} />}
 
         <div className="flex flex-col gap-3 pt-2">
           <h1 className="max-w-3xl font-display text-display-sm font-semibold text-balance text-primary sm:text-display-md">

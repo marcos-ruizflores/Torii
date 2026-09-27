@@ -6,7 +6,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.context.transaction.TestTransaction;
+import com.torii.email.PasswordResetRequestedEvent;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,10 +28,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional // each test leaves the DB as it found it
+@RecordApplicationEvents
 class AuthFlowIntegrationTest {
 
     @Autowired
     private MockMvc mvc;
+
+    @Autowired
+    private ApplicationEvents events;
 
     private String searchBody() {
         LocalDate start = LocalDate.now().plusMonths(2);
@@ -117,5 +124,44 @@ class AuthFlowIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(searchBody()))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void restablecerLaPasswordCierraLasSesionesAnteriores() throws Exception {
+        String oldToken = JsonPath.read(mvc.perform(post("/api/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Marcos","email":"reset@test.com","password":"superclave123"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), "$.token");
+
+        // Same answer for known and unknown emails.
+        mvc.perform(post("/api/auth/password/forgot").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"reset@test.com\"}"))
+                .andExpect(status().isAccepted());
+        mvc.perform(post("/api/auth/password/forgot").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"nadie@test.com\"}"))
+                .andExpect(status().isAccepted());
+        String resetToken = events.stream(PasswordResetRequestedEvent.class).findFirst().orElseThrow().token();
+
+        String newToken = JsonPath.read(mvc.perform(post("/api/auth/password/reset")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"%s\",\"password\":\"clavenueva456\"}".formatted(resetToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.emailVerified").value(true))
+                .andReturn().getResponse().getContentAsString(), "$.token");
+
+        // The session opened before the reset is closed, the new one works.
+        mvc.perform(get("/api/me").header("Authorization", "Bearer " + oldToken))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/me").header("Authorization", "Bearer " + newToken))
+                .andExpect(status().isOk());
+
+        // The link is single use.
+        mvc.perform(post("/api/auth/password/reset")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"%s\",\"password\":\"otraclave789\"}".formatted(resetToken)))
+                .andExpect(status().isBadRequest());
     }
 }
