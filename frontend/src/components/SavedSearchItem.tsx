@@ -67,7 +67,7 @@ export function SavedSearchItem({ search: s, onRepeat }: { search: SavedSearch; 
         <div className="flex flex-wrap items-center gap-2">
           <FlapText text={`${s.origin} → ${s.destination}`} still className="text-lg" />
           {isWeekPattern ? (
-            <Badge type="color" color="brand" size="sm">
+            <Badge type="color" color="gray" size="sm">
               Escapada
             </Badge>
           ) : (
