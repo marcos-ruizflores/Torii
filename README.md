@@ -457,7 +457,6 @@ src/main/java/com/torii
 src/main/resources/db/migration   Flyway migrations
 frontend/                         React SPA (see frontend/README.md)
 examples/                         real request and response JSON for /api/search
-docs/ARCHITECTURE.md              class diagram, use cases and design decisions
 ```
 
 ## Running locally
