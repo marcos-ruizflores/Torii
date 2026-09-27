@@ -89,7 +89,7 @@ public class ResendEmailService implements EmailService {
                         <tr><td style="padding:12px 32px 0;font-family:Barlow,Arial,sans-serif;font-size:16px;line-height:24px;color:#b2b7c0;">
                           Tu cuenta ya está lista. Tú eliges la ventana de vacaciones y cuántas noches
                           quieres estar; Torii prueba cada combinación de fechas y te enseña las más
-                          baratas, con su veredicto de precio.
+                          baratas.
                         </td></tr>
                         <tr><td style="padding:20px 32px 0;">
                           <table role="presentation" width="100%%" cellpadding="0" cellspacing="0"
@@ -136,7 +136,7 @@ public class ResendEmailService implements EmailService {
                 Bienvenido a Torii, %s.
 
                 Tu cuenta ya está lista. Tú eliges la ventana de vacaciones y cuántas noches quieres estar; \
-                Torii prueba cada combinación de fechas y te enseña las más baratas, con su veredicto de precio.
+                Torii prueba cada combinación de fechas y te enseña las más baratas.
 
                 Tu plan: Gratis, 30 consultas al mes.
 
