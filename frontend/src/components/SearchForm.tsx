@@ -339,6 +339,7 @@ export function SearchForm({ onSearch, loading, plan, remaining }: Props) {
                 text={String(estimatedQueries)}
                 length={3}
                 align="right"
+                mode="single"
                 tone={load === 'high' || overQuota ? 'dim' : 'signal'}
                 className="text-2xl"
               />
