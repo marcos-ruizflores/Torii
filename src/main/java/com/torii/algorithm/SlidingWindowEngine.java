@@ -2,6 +2,7 @@ package com.torii.algorithm;
 
 import com.torii.model.FlightOffer;
 import com.torii.model.SearchRequest;
+import com.torii.model.WeekPattern;
 import com.torii.provider.FlightProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +27,10 @@ import java.util.concurrent.Semaphore;
  * and a variability (e.g. 3, so lengths 14 to 17), it goes through every combination
  * of departure date and length, asks a {@link FlightProvider} for prices and returns
  * the {@code topN} cheapest offers.
+ *
+ * <p>If the request carries a {@link WeekPattern} ("getaway" mode, e.g. Friday to
+ * Sunday), the window doesn't slide day by day but week by week over that departure
+ * day; see {@link #buildWeeklyPairs(SearchRequest)}.
  *
  * <p>The lookups are I/O bound (mostly waiting on the network), so they run in
  * parallel on <b>virtual threads</b> (Java 21+). While one call is waiting, its
@@ -96,6 +101,9 @@ public class SlidingWindowEngine {
 
     /** Builds every (outbound, return) pair to explore. Pure logic, no calls. */
     private List<DatePair> buildDatePairs(SearchRequest request) {
+        if (request.hasWeekPattern()) {
+            return buildWeeklyPairs(request);
+        }
         // Precision sets how many days we move the departure date forward each step.
         // 1 (exhaustive) checks every day; 2 or 3 skip days to make fewer calls, at
         // the cost of possibly missing the exact cheapest day.
@@ -109,6 +117,28 @@ public class SlidingWindowEngine {
                  depart = depart.plusDays(step)) {
                 pairs.add(new DatePair(depart, depart.plusDays(duration)));
             }
+        }
+        return pairs;
+    }
+
+    /**
+     * Getaway variant ({@link com.torii.model.WeekPattern}): instead of sliding day by
+     * day, it jumps week by week over the chosen departure day (e.g. every Friday in
+     * the range) and always comes back on the requested day (e.g. Sunday).
+     *
+     * <p>The pattern sets the trip length, so there's no loop over lengths and
+     * precision plays no part: the step is always 7 days.
+     */
+    private List<DatePair> buildWeeklyPairs(SearchRequest request) {
+        WeekPattern pattern = request.weekPattern();
+        int stay = pattern.stayDays();
+        LocalDate lastValidDeparture = request.rangeEnd().minusDays(stay);
+        List<DatePair> pairs = new ArrayList<>();
+
+        for (LocalDate depart = pattern.firstDeparture(request.rangeStart());
+             !depart.isAfter(lastValidDeparture);
+             depart = depart.plusWeeks(1)) {
+            pairs.add(new DatePair(depart, depart.plusDays(stay)));
         }
         return pairs;
     }

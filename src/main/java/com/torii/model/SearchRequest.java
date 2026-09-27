@@ -20,6 +20,10 @@ import java.time.LocalDate;
  *   <li>{@code maxPrice}: optional budget ({@code null} means no limit). It's applied
  *       as a filter in the algorithm, NOT in the API call, so the cache can still be
  *       reused across different budgets.</li>
+ *   <li>{@code weekPattern}: optional getaway filter ({@code null} means no filter).
+ *       When set, only trips leaving and returning on those days of the week are
+ *       explored (e.g. Friday to Sunday) and {@code baseDuration} and
+ *       {@code variability} are <b>ignored</b>: the pattern sets the length.</li>
  * </ul>
  *
  * <p>Plain immutable {@code record} with no logic. Validation lives in the input DTO
@@ -35,7 +39,8 @@ public record SearchRequest(
         int maxStops,
         int topN,
         SearchPrecision precision,
-        BigDecimal maxPrice
+        BigDecimal maxPrice,
+        WeekPattern weekPattern
 ) {
     /**
      * Convenience constructor: {@link SearchPrecision#EXHAUSTIVE} precision and no
@@ -45,7 +50,7 @@ public record SearchRequest(
                          LocalDate rangeStart, LocalDate rangeEnd,
                          int baseDuration, int variability, int maxStops, int topN) {
         this(origin, destination, rangeStart, rangeEnd,
-                baseDuration, variability, maxStops, topN, SearchPrecision.EXHAUSTIVE, null);
+                baseDuration, variability, maxStops, topN, SearchPrecision.EXHAUSTIVE, null, null);
     }
 
     /** Convenience constructor with an explicit precision and no price limit. */
@@ -54,16 +59,36 @@ public record SearchRequest(
                          int baseDuration, int variability, int maxStops, int topN,
                          SearchPrecision precision) {
         this(origin, destination, rangeStart, rangeEnd,
-                baseDuration, variability, maxStops, topN, precision, null);
+                baseDuration, variability, maxStops, topN, precision, null, null);
     }
 
-    /** Shortest trip length to explore (the base). */
+    /** Convenience constructor without the getaway filter (weekly pattern). */
+    public SearchRequest(String origin, String destination,
+                         LocalDate rangeStart, LocalDate rangeEnd,
+                         int baseDuration, int variability, int maxStops, int topN,
+                         SearchPrecision precision, BigDecimal maxPrice) {
+        this(origin, destination, rangeStart, rangeEnd,
+                baseDuration, variability, maxStops, topN, precision, maxPrice, null);
+    }
+
+    /** Same request at another precision (the plan can decide it after validation). */
+    public SearchRequest withPrecision(SearchPrecision newPrecision) {
+        return new SearchRequest(origin, destination, rangeStart, rangeEnd, baseDuration, variability,
+                maxStops, topN, newPrecision, maxPrice, weekPattern);
+    }
+
+    /** Is this a weekend getaway search (or whatever weekly pattern it uses)? */
+    public boolean hasWeekPattern() {
+        return weekPattern != null;
+    }
+
+    /** Shortest trip length to explore (the base, or whatever the weekly pattern sets). */
     public int minDuration() {
-        return baseDuration;
+        return hasWeekPattern() ? weekPattern.stayDays() : baseDuration;
     }
 
-    /** Longest trip length to explore (base + variability). */
+    /** Longest trip length to explore (base + variability, or the same as the shortest with a pattern). */
     public int maxDuration() {
-        return baseDuration + variability;
+        return hasWeekPattern() ? weekPattern.stayDays() : baseDuration + variability;
     }
 }

@@ -57,6 +57,13 @@ public class SearchRecord {
     @Column(name = "max_price", precision = 10, scale = 2)
     private BigDecimal maxPrice;
 
+    /** Getaway filter (e.g. "FRIDAY"). Null for length-based searches. */
+    @Column(name = "depart_day_of_week", length = 10)
+    private String departDayOfWeek;
+
+    @Column(name = "return_day_of_week", length = 10)
+    private String returnDayOfWeek;
+
     @Column(name = "queries_used", nullable = false)
     private int queriesUsed;
 
@@ -78,6 +85,10 @@ public class SearchRecord {
         this.maxStops = request.maxStops();
         this.topN = request.topN();
         this.maxPrice = request.maxPrice();
+        if (request.hasWeekPattern()) {
+            this.departDayOfWeek = request.weekPattern().departDay().name();
+            this.returnDayOfWeek = request.weekPattern().returnDay().name();
+        }
         this.queriesUsed = queriesUsed;
         this.createdAt = Instant.now();
     }
@@ -128,6 +139,14 @@ public class SearchRecord {
 
     public BigDecimal getMaxPrice() {
         return maxPrice;
+    }
+
+    public String getDepartDayOfWeek() {
+        return departDayOfWeek;
+    }
+
+    public String getReturnDayOfWeek() {
+        return returnDayOfWeek;
     }
 
     public int getQueriesUsed() {

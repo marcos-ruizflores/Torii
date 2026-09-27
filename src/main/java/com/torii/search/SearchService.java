@@ -4,6 +4,7 @@ import com.torii.algorithm.SlidingWindowEngine;
 import com.torii.history.PriceHistoryService;
 import com.torii.history.SearchHistoryService;
 import com.torii.model.FlightOffer;
+import com.torii.model.SearchPrecision;
 import com.torii.model.SearchRequest;
 import com.torii.user.PlanQuotaService;
 import org.slf4j.Logger;
@@ -41,6 +42,17 @@ public class SearchService {
      * @param userId authenticated user id, or {@code null} for anonymous searches
      */
     public List<FlightOffer> search(SearchRequest request, @Nullable Long userId) {
+        // The plan decides the precision: an unrequested one becomes the plan's best,
+        // one the plan doesn't include is refused with a 403. Getaways ignore precision
+        // (the step is always a week), so they just take the plan's best.
+        if (userId != null) {
+            request = request.withPrecision(request.hasWeekPattern()
+                    ? quota.resolvePrecision(userId, null)
+                    : quota.resolvePrecision(userId, request.precision()));
+        } else if (request.precision() == null) {
+            request = request.withPrecision(SearchPrecision.EXHAUSTIVE);
+        }
+
         // Quota is checked and consumed BEFORE doing any work: if there's none left we
         // reject with a 429 without spending a single external call. This does NOT
         // go in the try/catch below, quota is a business rule, not a nice-to-have.

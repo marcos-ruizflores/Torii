@@ -1,5 +1,6 @@
 package com.torii.user;
 
+import com.torii.model.SearchPrecision;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +21,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Monthly quota tests: FREE gets 30 lookups/month, usage within the limit adds up,
- * going over is rejected with a 429 without consuming anything.
+ * going over is rejected with a 429 without consuming anything. Also covers the
+ * precision each plan includes.
  */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -76,5 +78,24 @@ class PlanQuotaServiceTest {
     void justoElLimiteExactoSePermite() {
         quota.consume(userId, 30);
         assertThat(quota.usageOf(userId).used()).isEqualTo(30);
+    }
+
+    @Test
+    void elPlanGratisSoloBuscaEnPrecisionRapida() {
+        assertThat(quota.resolvePrecision(userId, null)).isEqualTo(SearchPrecision.FAST);
+        assertThat(quota.resolvePrecision(userId, SearchPrecision.FAST)).isEqualTo(SearchPrecision.FAST);
+
+        assertThatThrownBy(() -> quota.resolvePrecision(userId, SearchPrecision.EXHAUSTIVE))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
+                        .isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
+    @Test
+    void cadaPlanIncluyeSusPrecisiones() {
+        assertThat(Plan.PRO.allows(SearchPrecision.BALANCED)).isTrue();
+        assertThat(Plan.PRO.allows(SearchPrecision.EXHAUSTIVE)).isFalse();
+        assertThat(Plan.PRO.bestPrecision()).isEqualTo(SearchPrecision.BALANCED);
+        assertThat(Plan.BUSINESS.bestPrecision()).isEqualTo(SearchPrecision.EXHAUSTIVE);
     }
 }

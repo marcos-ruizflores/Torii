@@ -1,5 +1,6 @@
 package com.torii.user;
 
+import com.torii.model.SearchPrecision;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,6 +61,34 @@ public class PlanQuotaService {
         PlanUsage usage = currentMonthUsage(userId);
         return new Usage(plan.name(), plan.monthlyQueries(),
                 usage.getQueriesUsed(), usage.getKey().usageMonth());
+    }
+
+    /**
+     * Precision to run the search at: the requested one if the plan includes it, or
+     * the plan's best when none was requested.
+     *
+     * @throws ResponseStatusException 403 if the plan doesn't include the requested precision
+     */
+    @Transactional(readOnly = true)
+    public SearchPrecision resolvePrecision(Long userId, SearchPrecision requested) {
+        Plan plan = planOf(userId);
+        if (requested == null) {
+            return plan.bestPrecision();
+        }
+        if (!plan.allows(requested)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "La precisión %s no está incluida en tu plan (%s). Usa la precisión Rápida."
+                            .formatted(label(requested), plan));
+        }
+        return requested;
+    }
+
+    private static String label(SearchPrecision precision) {
+        return switch (precision) {
+            case FAST -> "Rápida";
+            case BALANCED -> "Equilibrada";
+            case EXHAUSTIVE -> "Exhaustiva";
+        };
     }
 
     private Plan planOf(Long userId) {

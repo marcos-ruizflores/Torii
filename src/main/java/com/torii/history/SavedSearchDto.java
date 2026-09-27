@@ -20,12 +20,16 @@ public record SavedSearchDto(
         int topN,
         String precision,
         BigDecimal maxPrice,
+        // Getaway filter (e.g. "FRIDAY"/"SUNDAY"), null for length-based searches.
+        String departDayOfWeek,
+        String returnDayOfWeek,
         Instant createdAt
 ) {
     static SavedSearchDto from(SearchRecord record) {
         return new SavedSearchDto(record.getId(), record.getOrigin(), record.getDestination(),
                 record.getRangeStart(), record.getRangeEnd(), record.getBaseDuration(),
                 record.getVariability(), record.getMaxStops(), record.getTopN(),
-                record.getPrecision(), record.getMaxPrice(), record.getCreatedAt());
+                record.getPrecision(), record.getMaxPrice(),
+                record.getDepartDayOfWeek(), record.getReturnDayOfWeek(), record.getCreatedAt());
     }
 }

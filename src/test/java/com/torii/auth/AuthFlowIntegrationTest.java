@@ -70,7 +70,7 @@ class AuthFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].origin").value("BCN"))
                 .andExpect(jsonPath("$[0].destination").value("MAD"))
-                .andExpect(jsonPath("$[0].precision").value("EXHAUSTIVE"));
+                .andExpect(jsonPath("$[0].precision").value("FAST")); // no precision sent: FREE runs at Fast
 
         // 4. The token's profile endpoint answers.
         mvc.perform(get("/api/me").header("Authorization", "Bearer " + token))
@@ -108,12 +108,14 @@ class AuthFlowIntegrationTest {
     }
 
     @Test
-    void sinTokenMisBusquedasEs401PeroBuscarSigueSiendoPublico() throws Exception {
+    void sinTokenTantoMisBusquedasComoBuscarSon401() throws Exception {
+        // Without an account you can't see the history...
         mvc.perform(get("/api/me/searches")).andExpect(status().isUnauthorized());
 
+        // ...or search: searching uses quota and paid calls, so it needs a token.
         mvc.perform(post("/api/search")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(searchBody()))
-                .andExpect(status().isOk());
+                .andExpect(status().isUnauthorized());
     }
 }

@@ -1,0 +1,67 @@
+package com.torii.email;
+
+import com.torii.config.EmailProperties;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.web.client.RestClient;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.Matchers.containsString;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+
+/**
+ * Resend email test against a mock HTTP server (no network or real key). Checks that
+ * it sends POST /emails with the API key in the header and the right body, and that
+ * a Resend error surfaces as an exception.
+ */
+class ResendEmailServiceTest {
+
+    private MockRestServiceServer server;
+    private ResendEmailService service;
+
+    // enabled/baseUrl don't matter here (MockRestServiceServer intercepts), but the
+    // apiKey (goes in the header) and the sender (goes in the body) do.
+    private static final EmailProperties PROPS =
+            new EmailProperties(true, "https://api.resend.com", "re_test_key", "onboarding@resend.dev", "Torii");
+
+    @BeforeEach
+    void setUp() {
+        RestClient.Builder builder = RestClient.builder();
+        server = MockRestServiceServer.bindTo(builder).build();
+        service = new ResendEmailService(builder, PROPS);
+    }
+
+    @Test
+    void enviaPostAResendConLaApiKeyYElCuerpoCorrecto() {
+        server.expect(requestTo("https://api.resend.com/emails"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header("Authorization", "Bearer re_test_key"))
+                .andExpect(jsonPath("$.from").value("Torii <onboarding@resend.dev>"))
+                .andExpect(jsonPath("$.to[0]").value("marcos@example.com"))
+                .andExpect(jsonPath("$.subject", containsString("Marcos")))
+                .andExpect(jsonPath("$.html", containsString("Marcos")))
+                .andRespond(withSuccess("{\"id\":\"abc-123\"}", APPLICATION_JSON));
+
+        service.sendWelcome("marcos@example.com", "Marcos");
+
+        server.verify();
+    }
+
+    @Test
+    void siResendDevuelveErrorLanzaExcepcion() {
+        server.expect(requestTo("https://api.resend.com/emails"))
+                .andRespond(withStatus(HttpStatus.UNAUTHORIZED));
+
+        assertThatThrownBy(() -> service.sendWelcome("marcos@example.com", "Marcos"))
+                .isInstanceOf(RuntimeException.class);
+    }
+}

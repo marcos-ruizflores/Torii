@@ -19,9 +19,9 @@ import java.util.List;
  * maps it to the domain and hands it to {@link SearchService}. No business logic
  * here, it's just the boundary between HTTP and the domain.
  *
- * <p>Searching doesn't need an account, but if the request carries a valid JWT,
- * Spring injects it as the principal and the search gets linked to the user (for
- * "recent searches"). Without a token {@code jwt} is null and it's an anonymous search.
+ * <p>Searching needs an account (the security chain rejects requests without a token
+ * with a 401), so {@code jwt} is always set. Its {@code subject} is the user id, which
+ * links the search to that user (quota, "recent searches").
  */
 @RestController
 @RequestMapping("/api/search")
@@ -36,7 +36,7 @@ public class SearchController {
     @PostMapping
     public List<FlightOffer> search(@Valid @RequestBody SearchRequestDto dto,
                                     @AuthenticationPrincipal Jwt jwt) {
-        Long userId = (jwt != null) ? Long.valueOf(jwt.getSubject()) : null;
+        Long userId = Long.valueOf(jwt.getSubject());
         return searchService.search(dto.toDomain(), userId);
     }
 }

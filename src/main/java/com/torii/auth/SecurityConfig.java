@@ -3,6 +3,7 @@ package com.torii.auth;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -19,9 +20,10 @@ import org.springframework.security.web.SecurityFilterChain;
  * <p>Rules:
  * <ul>
  *   <li>{@code /api/auth/**} is public (sign up and login).</li>
- *   <li>{@code /api/search} and {@code /api/price-history} are public, Torii works
- *       without an account. If the request has a token, the controller uses it to
- *       link the search to the user.</li>
+ *   <li>{@code POST /api/search} needs a token: searching uses quota and paid external
+ *       API calls, so only registered users can do it. Anonymous users get a 401.</li>
+ *   <li>{@code /api/price-history} is public: it's cheap read-only data from the DB
+ *       and works as a showcase for people without an account yet.</li>
  *   <li>{@code /api/me/**} needs a valid token (profile, my searches...).</li>
  * </ul>
  */
@@ -45,6 +47,7 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/me/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/search").authenticated()
                         .anyRequest().permitAll())
                 // Validates the Bearer token on every request and exposes the Jwt as principal.
                 .oauth2ResourceServer(oauth -> oauth.jwt(Customizer.withDefaults()))

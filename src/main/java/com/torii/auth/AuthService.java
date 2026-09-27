@@ -4,8 +4,10 @@ import com.torii.auth.AuthDtos.AuthResponse;
 import com.torii.auth.AuthDtos.LoginRequest;
 import com.torii.auth.AuthDtos.SignupRequest;
 import com.torii.auth.AuthDtos.UserDto;
+import com.torii.email.UserRegisteredEvent;
 import com.torii.user.UserAccount;
 import com.torii.user.UserRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,11 +28,14 @@ public class AuthService {
     private final UserRepository users;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final ApplicationEventPublisher events;
 
-    public AuthService(UserRepository users, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public AuthService(UserRepository users, PasswordEncoder passwordEncoder, JwtService jwtService,
+                       ApplicationEventPublisher events) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.events = events;
     }
 
     @Transactional
@@ -41,6 +46,9 @@ public class AuthService {
         }
         UserAccount user = users.save(new UserAccount(
                 email, passwordEncoder.encode(request.password()), request.name().strip()));
+        // The welcome email goes out from an AFTER_COMMIT listener: only if the sign up
+        // actually commits, and without slowing down or breaking it if the email fails.
+        events.publishEvent(new UserRegisteredEvent(user.getEmail(), user.getName()));
         return new AuthResponse(jwtService.issueToken(user), UserDto.from(user));
     }
 

@@ -3,11 +3,13 @@ package com.torii.algorithm;
 import com.torii.model.FlightOffer;
 import com.torii.model.SearchPrecision;
 import com.torii.model.SearchRequest;
+import com.torii.model.WeekPattern;
 import com.torii.provider.FlightProvider;
 import com.torii.provider.MockFlightProvider;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -116,6 +118,81 @@ class SlidingWindowEngineTest {
                     .hasSizeLessThanOrEqualTo(5)
                     .isSortedAccordingTo((a, b) -> a.price().compareTo(b.price()));
         }
+    }
+
+    // --- Getaway filter (WeekPattern) -------------------------------------------
+
+    /** All of October, Friday to Sunday getaways. */
+    private SearchRequest weekendRequest() {
+        return new SearchRequest("BCN", "NRT",
+                LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31),
+                14, 3, 1, 10, SearchPrecision.EXHAUSTIVE, null,
+                new WeekPattern(DayOfWeek.FRIDAY, DayOfWeek.SUNDAY));
+    }
+
+    @Test
+    void conPatronSemanalTodaOfertaSaleYVuelveElDiaPedido() {
+        List<FlightOffer> result = engine.findBestOffers(weekendRequest());
+
+        assertThat(result).isNotEmpty();
+        assertThat(result).allSatisfy(offer -> {
+            assertThat(offer.departDate().getDayOfWeek()).isEqualTo(DayOfWeek.FRIDAY);
+            assertThat(offer.returnDate().getDayOfWeek()).isEqualTo(DayOfWeek.SUNDAY);
+            assertThat(offer.durationDays()).isEqualTo(2);
+        });
+    }
+
+    @Test
+    void conPatronSemanalSeIgnoranDuracionYVariabilidad() {
+        // The request asks for 14-17 days, but the pattern wins: all of them are 2 nights.
+        SearchRequest req = weekendRequest();
+        assertThat(req.minDuration()).isEqualTo(2);
+        assertThat(req.maxDuration()).isEqualTo(2);
+
+        assertThat(engine.findBestOffers(req))
+                .allSatisfy(offer -> assertThat(offer.durationDays()).isEqualTo(2));
+    }
+
+    @Test
+    void conPatronSemanalHayUnaConsultaPorSemana() {
+        // October 2026 has 5 Fridays; the 30th doesn't fit (it would come back on Nov 1).
+        assertThat(engine.countQueries(weekendRequest())).isEqualTo(4);
+    }
+
+    @Test
+    void patronSemanalQueCruzaLaSemanaCuentaLosDiasHaciaDelante() {
+        // Sunday to Friday is 5 nights, not -2.
+        SearchRequest req = new SearchRequest("BCN", "NRT",
+                LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31),
+                14, 3, 1, 10, SearchPrecision.EXHAUSTIVE, null,
+                new WeekPattern(DayOfWeek.SUNDAY, DayOfWeek.FRIDAY));
+
+        assertThat(engine.findBestOffers(req)).isNotEmpty().allSatisfy(offer -> {
+            assertThat(offer.departDate().getDayOfWeek()).isEqualTo(DayOfWeek.SUNDAY);
+            assertThat(offer.returnDate().getDayOfWeek()).isEqualTo(DayOfWeek.FRIDAY);
+            assertThat(offer.durationDays()).isEqualTo(5);
+        });
+    }
+
+    @Test
+    void patronSemanalHaceMuchasMenosConsultasQueLaBusquedaNormal() {
+        SearchRequest normal = new SearchRequest("BCN", "NRT",
+                LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31), 2, 0, 1, 10);
+
+        assertThat(engine.countQueries(weekendRequest()))
+                .isLessThan(engine.countQueries(normal) / 5);
+    }
+
+    @Test
+    void siNoCabeNingunaEscapadaNoHayConsultasNiOfertas() {
+        // From Monday Oct 5 to Thursday Oct 8, 2026 there's no Friday to Sunday at all.
+        SearchRequest req = new SearchRequest("BCN", "NRT",
+                LocalDate.of(2026, 10, 5), LocalDate.of(2026, 10, 8),
+                2, 0, 1, 10, SearchPrecision.EXHAUSTIVE, null,
+                new WeekPattern(DayOfWeek.FRIDAY, DayOfWeek.SUNDAY));
+
+        assertThat(engine.countQueries(req)).isZero();
+        assertThat(engine.findBestOffers(req)).isEmpty();
     }
 
     /** FlightProvider that delegates to the mock but counts the calls. */

@@ -111,6 +111,13 @@
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- Utilidades para simular usuarios autenticados en los @WebMvcTest
+		     (el post-procesador jwt(), @WithMockUser, etc.) sin firmar tokens reales. -->
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>

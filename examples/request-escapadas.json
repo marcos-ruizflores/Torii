@@ -1,0 +1,12 @@
+{
+  "origin": "BCN",
+  "destination": "MAD",
+  "rangeStart": "2026-10-01",
+  "rangeEnd": "2026-10-31",
+  "baseDuration": 2,
+  "variability": 0,
+  "maxStops": 1,
+  "topN": 5,
+  "departDayOfWeek": "FRIDAY",
+  "returnDayOfWeek": "SUNDAY"
+}

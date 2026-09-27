@@ -3,6 +3,16 @@
 
 export type SearchPrecision = 'FAST' | 'BALANCED' | 'EXHAUSTIVE'
 
+/** Days of the week as the backend expects them (java.time.DayOfWeek). */
+export type DayOfWeek =
+  | 'MONDAY'
+  | 'TUESDAY'
+  | 'WEDNESDAY'
+  | 'THURSDAY'
+  | 'FRIDAY'
+  | 'SATURDAY'
+  | 'SUNDAY'
+
 /** Body of POST /api/search. */
 export interface SearchRequest {
   origin: string
@@ -15,6 +25,10 @@ export interface SearchRequest {
   topN: number
   precision?: SearchPrecision
   maxPrice?: number // optional budget in EUR, leave out for no limit
+  // Weekend getaway filter: ALWAYS both or neither. With FRIDAY/SUNDAY only the
+  // weekends in the range are explored and baseDuration/variability are ignored.
+  departDayOfWeek?: DayOfWeek
+  returnDayOfWeek?: DayOfWeek
 }
 
 /** One offer from the array returned by POST /api/search. */
@@ -82,5 +96,7 @@ export interface SavedSearch {
   topN: number
   precision: SearchPrecision
   maxPrice: number | null
+  departDayOfWeek: DayOfWeek | null
+  returnDayOfWeek: DayOfWeek | null
   createdAt: string
 }

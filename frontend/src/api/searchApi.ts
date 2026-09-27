@@ -8,6 +8,10 @@ export async function searchOffers(request: SearchRequest): Promise<FlightOffer[
     const { data } = await http.post<FlightOffer[]>('/api/search', request)
     return data
   } catch (err) {
+    // 401: searching needs an account (backend security blocks anonymous users).
+    if (axios.isAxiosError(err) && err.response?.status === 401) {
+      throw new Error('Inicia sesión o crea una cuenta gratis para buscar vuelos.')
+    }
     // If the backend answered a 400 with a ProblemDetail, show its "detail".
     if (axios.isAxiosError(err) && err.response?.data) {
       const problem = err.response.data as ProblemDetail
