@@ -10,6 +10,8 @@ import type { User } from '../api/types'
 interface AuthState {
   /** Logged in user, or null when anonymous. */
   user: User | null
+  /** True while a stored token is being checked on startup; `user` isn't final yet. */
+  restoring: boolean
   login: (email: string, password: string) => Promise<void>
   signup: (name: string, email: string, password: string) => Promise<void>
   logout: () => void
@@ -21,6 +23,7 @@ const AuthContext = createContext<AuthState | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [restoring, setRestoring] = useState(() => !!getToken())
 
   // On load, try to restore the session if there's a stored token. If it expired
   // or the account is gone, clear it and carry on as anonymous.
@@ -30,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .fetchMe()
       .then(setUser)
       .catch(() => clearToken())
+      .finally(() => setRestoring(false))
   }, [])
 
   async function login(email: string, password: string) {
@@ -50,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, updateUser: setUser }}>
+    <AuthContext.Provider value={{ user, restoring, login, signup, logout, updateUser: setUser }}>
       {children}
     </AuthContext.Provider>
   )

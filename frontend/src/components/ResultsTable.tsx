@@ -1,18 +1,33 @@
-import { Plane } from '@untitledui/icons'
-import { Badge } from '@/components/base/badges/badges'
+import { AlertCircle, ArrowUpRight } from '@untitledui/icons'
 import { Button } from '@/components/base/buttons/button'
+import { cx } from '@/utils/cx'
 import type { FlightOffer, PriceInsight } from '../api/types'
+import { FlapBlank, FlapText } from './board/FlapText'
+
+type BoardState = 'idle' | 'loading' | 'error' | 'success'
 
 interface Props {
-  offers: FlightOffer[]
+  state: BoardState
+  offers?: FlightOffer[]
   /** IATA codes of the search (offers don't repeat them). */
-  origin: string
-  destination: string
+  origin?: string
+  destination?: string
+  errorMessage?: string
 }
 
-/** "2026-09-03" -> "3 sep". */
-function shortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+/**
+ * Fixed columns, like a real departures board: dates, nights and prices always line
+ * up from one row to the next. Below md the row stacks into a compact block.
+ */
+const COLUMNS =
+  'md:grid md:grid-cols-[6.5rem_6.5rem_4rem_minmax(7rem,1fr)_minmax(6.5rem,8rem)_8rem_7rem_7.5rem] md:items-center md:gap-x-4'
+
+/** "2026-09-03" -> "3 SEP". */
+function boardDate(iso: string): string {
+  return new Date(iso)
+    .toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+    .replace('.', '')
+    .toUpperCase()
 }
 
 /** "HH:mm:ss" -> "HH:mm" (or a dash if the source has no time). */
@@ -20,176 +35,273 @@ function shortTime(time: string | null): string {
   return time ? time.slice(0, 5) : '—'
 }
 
-/** Days between outbound and return. */
-function durationDays(depart: string, ret: string): number {
+/** Nights between outbound and return. */
+function nights(depart: string, ret: string): number {
   const ms = new Date(ret).getTime() - new Date(depart).getTime()
   return Math.round(ms / (1000 * 60 * 60 * 24))
 }
 
-/** One leg of the trip (outbound or return): time, date and the origin -> destination line. */
-function Leg({
-  time,
-  date,
-  from,
-  to,
-  stops,
-  stopovers,
-}: {
-  time: string | null
-  date: string
-  from: string
-  to: string
-  stops?: number
-  stopovers?: string[]
-}) {
-  return (
-    <div className="flex items-center gap-4">
-      <div className="w-16 shrink-0">
-        <div className="text-lg font-semibold text-primary">{shortTime(time)}</div>
-        <div className="text-xs text-tertiary">{shortDate(date)}</div>
-      </div>
-
-      <span className="w-11 shrink-0 text-sm font-semibold text-primary">{from}</span>
-
-      {/* Flight line: straight if direct, with dots for each stop. */}
-      <div className="relative flex flex-1 items-center">
-        <div className="h-px flex-1 bg-border-secondary" />
-        {stops != null && stops > 0 && (
-          <>
-            {Array.from({ length: stops }).map((_, i) => (
-              <span key={i} className="mx-0.5 size-1.5 rounded-full bg-fg-warning-primary" />
-            ))}
-            <div className="h-px flex-1 bg-border-secondary" />
-          </>
-        )}
-        <Plane className="ml-1 size-4 shrink-0 text-fg-quaternary" />
-      </div>
-
-      <span className="w-11 shrink-0 text-sm font-semibold text-primary">{to}</span>
-
-      <div className="hidden w-32 shrink-0 text-right sm:block">
-        {stops != null &&
-          (stops === 0 ? (
-            <Badge type="pill-color" color="success" size="sm">
-              Directo
-            </Badge>
-          ) : (
-            <Badge type="pill-color" color="warning" size="sm">
-              {stops} escala{stops > 1 ? 's' : ''}
-              {stopovers && stopovers.length > 0 && ` · ${stopovers.join(', ')}`}
-            </Badge>
-          ))}
-      </div>
-    </div>
-  )
+function euros(value: number, currency: string): string {
+  return value.toLocaleString('es-ES', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })
 }
 
 const VERDICTS = {
-  low: { label: 'Precio bajo', color: 'success' },
-  typical: { label: 'Precio habitual', color: 'gray' },
-  high: { label: 'Precio alto', color: 'warning' },
+  low: { label: 'Precio bajo', dot: 'bg-fg-success-secondary', text: 'text-success-primary' },
+  typical: { label: 'Precio habitual', dot: 'bg-fg-quaternary', text: 'text-secondary' },
+  high: { label: 'Precio alto', dot: 'bg-fg-warning-secondary', text: 'text-warning-primary' },
 } as const
 
 /**
- * Google's verdict for this price (low / typical / high) plus the usual range for
- * the route, when the source provides it.
+ * Google's verdict for the price, always as words plus a mark, never colour alone,
+ * with the usual range for the route when the source sends it.
  */
-function PriceVerdict({ insight, symbol }: { insight: PriceInsight | null; symbol: string }) {
+function Verdict({ insight, currency }: { insight: PriceInsight | null; currency: string }) {
   const verdict = insight ? VERDICTS[insight.level as keyof typeof VERDICTS] : undefined
-  if (!insight || !verdict) return null
-
+  if (!insight || !verdict) {
+    return <span className="text-sm text-quaternary">Sin veredicto</span>
+  }
   const range =
     insight.typicalLow != null && insight.typicalHigh != null
-      ? `Lo normal: ${Math.round(insight.typicalLow)}–${Math.round(insight.typicalHigh)} ${symbol}`
+      ? `Lo normal: ${Math.round(insight.typicalLow)}–${euros(insight.typicalHigh, currency)}`
       : null
+  return (
+    <span className="flex flex-col gap-0.5">
+      <span className={cx('flex items-center gap-1.5 font-display text-sm font-semibold uppercase', verdict.text)}>
+        <span className={cx('size-2 rounded-[1px]', verdict.dot)} aria-hidden="true" />
+        {verdict.label}
+      </span>
+      {range && <span className="text-xs whitespace-nowrap text-tertiary">{range}</span>}
+    </span>
+  )
+}
+
+function Stops({ stops, stopovers }: { stops: number; stopovers: string[] }) {
+  if (stops === 0) return <span className="font-display font-semibold text-success-primary uppercase">Directo</span>
+  return (
+    <span className="flex flex-col">
+      <span className="font-display font-semibold text-primary uppercase">
+        {stops} {stops === 1 ? 'escala' : 'escalas'}
+      </span>
+      {stopovers.length > 0 && <span className="text-xs text-tertiary">vía {stopovers.join(', ')}</span>}
+    </span>
+  )
+}
+
+function ColumnHeaders() {
+  return (
+    <div role="row" className={cx('hidden border-b border-secondary px-5 py-2.5', COLUMNS)}>
+      {['Salida', 'Vuelta', 'Noches', 'Aerolínea', 'Escalas', 'Veredicto', 'Precio', ''].map((h, i) => (
+        <span key={i} role="columnheader" className={cx('board-label', h === 'Precio' && 'text-right')}>
+          {h || <span className="sr-only">Reserva</span>}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+/** A placeholder row of blank flaps: the board waiting, or ticking while it scans. */
+function BlankRow({ ticking }: { ticking: boolean }) {
+  return (
+    <div role="presentation" className={cx('border-b border-secondary px-5 py-4 last:border-b-0', COLUMNS)}>
+      <FlapBlank length={6} ticking={ticking} className="text-base" />
+      <FlapBlank length={6} ticking={ticking} className="hidden text-base md:inline-flex" />
+      <FlapBlank length={2} ticking={ticking} className="hidden text-base md:inline-flex" />
+      <FlapBlank length={8} ticking={ticking} className="hidden text-base md:inline-flex" />
+      <span className="hidden md:block" />
+      <span className="hidden md:block" />
+      <FlapBlank length={5} ticking={ticking} className="float-right text-base md:float-none md:justify-self-end" />
+      <span className="hidden md:block" />
+    </div>
+  )
+}
+
+function OfferRow({ offer: o, cheapest, route }: { offer: FlightOffer; cheapest: boolean; route: string }) {
+  const price = cheapest ? (
+    <FlapText text={euros(o.price, o.currency)} tone="signal" className="text-2xl" />
+  ) : (
+    <span className="font-display text-xl font-semibold text-primary">{euros(o.price, o.currency)}</span>
+  )
+  const book = (
+    <Button
+      size="sm"
+      color={cheapest ? 'primary' : 'secondary'}
+      iconTrailing={ArrowUpRight}
+      href={o.bookingUrl}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={`Reservar ${o.airline}, ${route}, ${boardDate(o.departDate)} a ${boardDate(o.returnDate)}, ${euros(o.price, o.currency)}`}
+    >
+      Reservar
+    </Button>
+  )
+  const airline = (
+    <span className="flex flex-col">
+      <span className="font-semibold text-primary">{o.airline}</span>
+      {cheapest && (
+        <span className="font-display text-xs font-semibold tracking-wide text-fg-brand-primary uppercase">
+          La más barata
+        </span>
+      )}
+    </span>
+  )
 
   return (
-    <div className="flex flex-col items-end gap-0.5">
-      <Badge type="pill-color" color={verdict.color} size="sm">
-        {verdict.label}
-      </Badge>
-      {range && <span className="text-xs text-tertiary">{range}</span>}
+    <div role="row" className={cx('border-b border-secondary last:border-b-0', cheapest && 'bg-primary')}>
+      {/* Board: one fixed column per field. */}
+      <div className={cx('hidden px-5 py-4', COLUMNS)}>
+        <span role="cell" className="flex flex-col">
+          <span className="font-display text-lg font-semibold text-primary uppercase">{boardDate(o.departDate)}</span>
+          <span className="text-sm text-tertiary">{shortTime(o.departureTime)}</span>
+        </span>
+        <span role="cell" className="flex flex-col">
+          <span className="font-display text-lg font-semibold text-primary uppercase">{boardDate(o.returnDate)}</span>
+          <span className="text-sm text-tertiary">{shortTime(o.returnDepartureTime)}</span>
+        </span>
+        <span role="cell" className="font-display text-lg font-semibold text-primary">
+          {nights(o.departDate, o.returnDate)}
+        </span>
+        <span role="cell">{airline}</span>
+        <span role="cell">
+          <Stops stops={o.stops} stopovers={o.stopovers} />
+        </span>
+        <span role="cell">
+          <Verdict insight={o.priceInsight} currency={o.currency} />
+        </span>
+        <span role="cell" className="text-right">
+          {price}
+        </span>
+        <span role="cell" className="justify-self-end">
+          {book}
+        </span>
+      </div>
+
+      {/* Phones: the same fields on a fixed two-column grid, identical on every row. */}
+      <div className="grid grid-cols-[1fr_auto] items-start gap-x-4 gap-y-3 px-5 py-4 md:hidden">
+        <span role="cell" className="flex flex-col">
+          <span className="font-display text-lg font-semibold text-primary uppercase">
+            {boardDate(o.departDate)} → {boardDate(o.returnDate)}
+          </span>
+          <span className="text-sm text-tertiary">
+            Ida {shortTime(o.departureTime)} · Vuelta {shortTime(o.returnDepartureTime)}
+          </span>
+        </span>
+        <span role="cell" className="text-right font-display text-lg font-semibold text-primary">
+          {nights(o.departDate, o.returnDate)}
+          <span className="ml-1 text-sm font-medium text-tertiary">noches</span>
+        </span>
+        <span role="cell">{airline}</span>
+        <span role="cell" className="text-right">
+          <Stops stops={o.stops} stopovers={o.stopovers} />
+        </span>
+        <span role="cell" className="self-end">
+          <Verdict insight={o.priceInsight} currency={o.currency} />
+        </span>
+        <span role="cell" className="flex flex-col items-end gap-2">
+          {price}
+          {book}
+        </span>
+      </div>
     </div>
   )
 }
 
 /**
- * Offers found, Skyscanner style: one card per offer, both legs on the left and
- * price + booking on the right. The price is ALWAYS the round-trip total.
+ * The departures board: every offer Torii found for the scanned window, cheapest on
+ * top. The header works like a dictionary's guide words, naming the span in view
+ * (route, first and last departure, number of rows). Prices are round-trip totals.
  */
-export function ResultsTable({ offers, origin, destination }: Props) {
-  if (offers.length === 0) {
-    return (
-      <section className="rounded-xl bg-primary p-6 shadow-xs ring-1 ring-secondary">
-        <p className="text-sm text-tertiary">No se han encontrado ofertas para esos criterios.</p>
-      </section>
-    )
-  }
-
-  const cheapest = offers[0].price
+export function ResultsBoard({ state, offers = [], origin, destination, errorMessage }: Props) {
+  const route = origin && destination ? `${origin} → ${destination}` : ''
+  const departures = offers.map((o) => o.departDate).sort()
+  const span =
+    departures.length > 0
+      ? departures[0] === departures[departures.length - 1]
+        ? boardDate(departures[0])
+        : `${boardDate(departures[0])} — ${boardDate(departures[departures.length - 1])}`
+      : null
 
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex items-end justify-between px-1">
-        <h2 className="text-lg font-semibold text-primary">Mejores {offers.length} ofertas</h2>
-        <span className="text-sm text-tertiary">Precios de ida y vuelta, por viajero</span>
+    <section aria-labelledby="board-title" className="overflow-hidden rounded-xl bg-secondary ring-1 ring-secondary ring-inset">
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-secondary px-5 py-4">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <h2 id="board-title" className="font-display text-lg font-semibold tracking-wide text-primary uppercase">
+            Salidas
+          </h2>
+          {route ? <FlapText text={route} className="text-lg" /> : <FlapBlank length={9} className="text-lg" />}
+        </div>
+        <p className="flex flex-wrap items-baseline gap-x-2 text-sm text-tertiary">
+          {state === 'success' && offers.length > 0 && (
+            <span className="board-label text-secondary">
+              {span} · {offers.length} {offers.length === 1 ? 'oferta' : 'ofertas'}
+            </span>
+          )}
+          {state === 'loading' && <span className="board-label text-secondary">Escaneando fechas</span>}
+          <span>Ida y vuelta por viajero</span>
+        </p>
       </div>
 
-      {offers.map((o, i) => {
-        const extra = o.price - cheapest
-        const symbol = o.currency === 'EUR' ? '€' : o.currency
-        return (
-          <article
-            key={`${o.airline}-${o.departDate}-${i}`}
-            className={`flex flex-col overflow-hidden rounded-xl bg-primary shadow-xs ring-1 sm:flex-row ${
-              i === 0 ? 'ring-2 ring-brand' : 'ring-secondary'
-            }`}
-          >
-            {/* Trip legs */}
-            <div className="flex flex-1 flex-col gap-4 p-5">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-primary">{o.airline}</span>
-                {i === 0 && (
-                  <Badge type="pill-color" color="brand" size="sm">
-                    La más barata
-                  </Badge>
-                )}
-                <span className="ml-auto text-xs text-tertiary">
-                  {durationDays(o.departDate, o.returnDate)} días de estancia
-                </span>
-              </div>
-
-              <Leg
-                time={o.departureTime}
-                date={o.departDate}
-                from={origin}
-                to={destination}
-                stops={o.stops}
-                stopovers={o.stopovers}
-              />
-              <Leg time={o.returnDepartureTime} date={o.returnDate} from={destination} to={origin} />
+      <div role="table" aria-label={route ? `Ofertas ${route}` : 'Ofertas'} aria-busy={state === 'loading'}>
+        {state === 'success' && offers.length > 0 && (
+          <>
+            <ColumnHeaders />
+            <div role="rowgroup">
+              {offers.map((o, i) => (
+                <OfferRow key={`${o.airline}-${o.departDate}-${o.returnDate}-${i}`} offer={o} cheapest={i === 0} route={route} />
+              ))}
             </div>
+          </>
+        )}
 
-            {/* Price and booking */}
-            <div className="flex items-center justify-between gap-1 border-t border-secondary bg-secondary px-5 py-4 sm:w-52 sm:flex-col sm:items-end sm:justify-center sm:border-t-0 sm:border-l">
-              <div className="text-right">
-                <div className="text-xl font-semibold text-primary">
-                  {o.price.toFixed(2)} {symbol}
-                </div>
-                {extra > 0 ? (
-                  <div className="text-xs text-tertiary">+{extra.toFixed(2)} vs la más barata</div>
-                ) : (
-                  <div className="text-xs text-tertiary">ida y vuelta</div>
-                )}
-              </div>
-              <PriceVerdict insight={o.priceInsight} symbol={symbol} />
-              <Button size="sm" color="primary" href={o.bookingUrl} target="_blank" rel="noreferrer">
-                Reservar
-              </Button>
-            </div>
-          </article>
-        )
-      })}
+        {(state === 'idle' || state === 'loading') && (
+          <div role="rowgroup">
+            <BlankRow ticking={state === 'loading'} />
+            <BlankRow ticking={state === 'loading'} />
+            <BlankRow ticking={state === 'loading'} />
+          </div>
+        )}
+      </div>
+
+      {state === 'idle' && (
+        <div className="border-t border-secondary px-5 py-5">
+          <p className="font-semibold text-primary">Aún no hay salidas en el panel.</p>
+          <p className="mt-1 max-w-prose text-sm text-tertiary">
+            Elige una ventana de fechas y cuántas noches quieres estar. Torii probará cada combinación de ida y
+            vuelta y colocará aquí las más baratas, con su veredicto de precio.
+          </p>
+        </div>
+      )}
+
+      {state === 'loading' && (
+        <p className="border-t border-secondary px-5 py-4 text-sm text-tertiary" aria-live="polite">
+          Probando cada combinación de fechas. Las búsquedas grandes pueden tardar unos segundos.
+        </p>
+      )}
+
+      {state === 'error' && (
+        <div className="flex items-start gap-3 px-5 py-5" role="alert">
+          <AlertCircle className="mt-0.5 size-5 shrink-0 text-fg-error-primary" aria-hidden="true" />
+          <div>
+            <p className="font-display font-semibold tracking-wide text-error-primary uppercase">
+              No se pudo completar la búsqueda
+            </p>
+            <p className="mt-1 text-sm text-secondary">{errorMessage}</p>
+          </div>
+        </div>
+      )}
+
+      {state === 'success' && offers.length === 0 && (
+        <div className="px-5 py-5">
+          <p className="font-semibold text-primary">Sin salidas para esos criterios.</p>
+          <p className="mt-1 text-sm text-tertiary">
+            Prueba a ampliar la ventana, permitir más escalas o subir el presupuesto.
+          </p>
+        </div>
+      )}
     </section>
   )
 }

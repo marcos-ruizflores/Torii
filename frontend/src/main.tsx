@@ -10,6 +10,14 @@ import { NotFound } from './pages/NotFound.tsx'
 import { Pricing } from './pages/Pricing.tsx'
 import { SignUp } from './pages/SignUp.tsx'
 
+// Self-hosted Barlow (running text) and Barlow Semi Condensed (board glyphs).
+import '@fontsource/barlow/400.css'
+import '@fontsource/barlow/500.css'
+import '@fontsource/barlow/600.css'
+import '@fontsource/barlow-semi-condensed/500.css'
+import '@fontsource/barlow-semi-condensed/600.css'
+import '@fontsource/barlow-semi-condensed/700.css'
+
 // Global styles: Tailwind + Untitled UI theme (colors, typography, tokens).
 import '@/styles/globals.css'
 

@@ -33,9 +33,9 @@ export function RecentSearches({ onRepeat }: Props) {
   const hasMore = searches.data.length > SHOWN_ON_HOME
 
   return (
-    <section className="rounded-xl bg-primary p-6 shadow-xs ring-1 ring-secondary">
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-primary">Mis últimas búsquedas</h2>
+    <section className="rounded-xl bg-secondary p-5 ring-1 ring-secondary ring-inset sm:p-6">
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-lg font-semibold tracking-wide text-primary uppercase">Últimas búsquedas</h2>
         {hasMore && (
           <Button color="link-color" size="sm" iconTrailing={ArrowRight} onClick={() => navigate('/mis-busquedas')}>
             Ver todas

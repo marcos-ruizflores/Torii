@@ -1,24 +1,33 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertCircle, LogOut01, Plane, Zap } from '@untitledui/icons'
 import { useLocation, useNavigate } from 'react-router'
-import { SearchForm } from './components/SearchForm'
-import { ResultsTable } from './components/ResultsTable'
-import { RouteMap } from './components/RouteMap'
-import { PriceHistoryChart } from './components/PriceHistoryChart'
-import { Badge } from '@/components/base/badges/badges'
 import { Button } from '@/components/base/buttons/button'
+import { AppHeader } from './components/board/AppHeader'
+import { SearchForm } from './components/SearchForm'
+import { ResultsBoard } from './components/ResultsTable'
 import { RecentSearches } from './components/RecentSearches'
 import { useAuth } from './auth/AuthContext'
 import { useSearch } from './hooks/useSearch'
 import { fetchMyUsage } from './api/authApi'
 import type { SearchRequest } from './api/types'
 
+// The map and the chart only show up after a search, so they load on demand and
+// keep react-simple-maps and Recharts out of the first bundle.
+const RouteMap = lazy(() => import('./components/RouteMap').then((m) => ({ default: m.RouteMap })))
+const PriceHistoryChart = lazy(() =>
+  import('./components/PriceHistoryChart').then((m) => ({ default: m.PriceHistoryChart })),
+)
+
+/** Same size as the panel it stands in for, so nothing jumps when it arrives. */
+function PanelFallback() {
+  return <div className="h-80 rounded-xl bg-secondary ring-1 ring-secondary ring-inset" aria-hidden="true" />
+}
+
 export default function App() {
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
-  const { user, logout } = useAuth()
+  const { user, restoring } = useAuth()
   const search = useSearch()
   // Keep the route of the last search for the map and the price history.
   const [route, setRoute] = useState<{ origin: string; destination: string } | null>(null)
@@ -31,6 +40,12 @@ export default function App() {
   })
 
   function handleSearch(req: SearchRequest) {
+    // Searching needs an account: with no session, instead of firing a call the
+    // backend would reject with a 401, send the user to sign up.
+    if (!user) {
+      navigate('/signup')
+      return
+    }
     setRoute({ origin: req.origin, destination: req.destination })
     search.mutate(req, {
       // The search we just ran should show up in the history and the counter.
@@ -43,99 +58,79 @@ export default function App() {
     })
   }
 
-  // "Repeat" from /mis-busquedas arrives as navigation state: run it on mount and
-  // clear the state so it doesn't run again on every reload.
+  // "Repeat" from /mis-busquedas arrives as navigation state: run it once the session
+  // is known and clear the state so it doesn't run again on every reload.
   useEffect(() => {
+    if (restoring) return
     const repeat = (location.state as { repeat?: SearchRequest } | null)?.repeat
     if (repeat) {
       navigate('.', { replace: true, state: null })
       handleSearch(repeat)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [restoring])
+
+  const remaining =
+    usage.isSuccess && usage.data.limit != null ? Math.max(0, usage.data.limit - usage.data.used) : null
+  const boardState = search.isPending ? 'loading' : search.isError ? 'error' : search.isSuccess ? 'success' : 'idle'
 
   return (
-    <div className="min-h-dvh bg-secondary">
-      <main className="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-10">
-        <header className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex size-12 items-center justify-center rounded-lg bg-brand-solid text-white">
-              <Plane className="size-6" />
-            </div>
+    <div className="min-h-dvh bg-primary">
+      <main className="mx-auto flex max-w-6xl flex-col gap-8 px-4 pt-6 pb-16 sm:px-6">
+        <AppHeader />
+
+        <div className="flex flex-col gap-3 pt-2">
+          <h1 className="max-w-3xl font-display text-display-sm font-semibold text-balance text-primary sm:text-display-md">
+            Tú eliges la ventana. Torii prueba cada fecha.
+          </h1>
+          <p className="max-w-2xl text-lg text-tertiary">
+            Encuentra la mejor oferta de vuelo dentro de tu rango de vacaciones, y si el precio es bueno de
+            verdad.
+          </p>
+        </div>
+
+        <SearchForm onSearch={handleSearch} loading={search.isPending} plan={user?.plan} remaining={remaining} />
+
+        {/* Without a session the form is visible (as a showcase), but searching needs
+            an account, so we invite the user to sign up for free. */}
+        {!user && (
+          <div className="flex flex-col items-start gap-4 rounded-xl bg-secondary px-5 py-4 ring-1 ring-secondary ring-inset sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-display-xs font-semibold text-primary">Torii</h1>
-              <p className="text-sm text-tertiary">
-                Encuentra la mejor oferta de vuelo dentro de tu rango de vacaciones
-              </p>
+              <p className="font-semibold text-primary">Crea una cuenta gratis para escanear fechas</p>
+              <p className="mt-0.5 text-sm text-tertiary">El plan Gratis incluye 30 consultas al mes, sin tarjeta.</p>
+            </div>
+            <div className="flex gap-2">
+              <Button color="secondary" size="sm" onClick={() => navigate('/login')}>
+                Iniciar sesión
+              </Button>
+              <Button color="primary" size="sm" onClick={() => navigate('/signup')}>
+                Crear cuenta gratis
+              </Button>
             </div>
           </div>
-          <nav className="flex items-center gap-2">
-            <Button color="tertiary" size="sm" iconLeading={Zap} onClick={() => navigate('/planes')}>
-              Planes
-            </Button>
-            {user ? (
-              <>
-                <span className="text-sm text-secondary">
-                  Hola, <span className="font-semibold text-primary">{user.name}</span>
-                </span>
-                <Badge type="pill-color" color={user.plan === 'FREE' ? 'gray' : 'brand'} size="sm">
-                  {user.plan}
-                </Badge>
-                {usage.isSuccess && usage.data.limit != null && (
-                  <Badge
-                    type="pill-color"
-                    size="sm"
-                    color={usage.data.used >= usage.data.limit ? 'error' : 'success'}
-                  >
-                    {usage.data.used}/{usage.data.limit} consultas
-                  </Badge>
-                )}
-                <Button color="secondary" size="sm" iconLeading={LogOut01} onClick={logout}>
-                  Salir
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button color="secondary" size="sm" onClick={() => navigate('/login')}>
-                  Iniciar sesión
-                </Button>
-                <Button color="primary" size="sm" onClick={() => navigate('/signup')}>
-                  Crear cuenta
-                </Button>
-              </>
-            )}
-          </nav>
-        </header>
+        )}
 
-        <SearchForm onSearch={handleSearch} loading={search.isPending} />
+        <ResultsBoard
+          state={boardState}
+          offers={search.data}
+          origin={route?.origin}
+          destination={route?.destination}
+          errorMessage={search.error?.message}
+        />
+
+        {route && (
+          <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2">
+            <Suspense fallback={<PanelFallback />}>
+              <RouteMap origin={route.origin} destination={route.destination} />
+            </Suspense>
+            <Suspense fallback={<PanelFallback />}>
+              <PriceHistoryChart origin={route.origin} destination={route.destination} />
+            </Suspense>
+          </div>
+        )}
 
         {/* Logged in users only, anonymous searches have no history. */}
         {user && <RecentSearches onRepeat={handleSearch} />}
-
-        {route && <RouteMap origin={route.origin} destination={route.destination} />}
-
-        {search.isPending && (
-          <div className="flex flex-col items-center gap-3 py-10">
-            <div className="size-8 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
-            <p className="text-sm text-tertiary">Buscando las mejores ofertas…</p>
-          </div>
-        )}
-
-        {search.isError && (
-          <div className="flex items-start gap-3 rounded-xl bg-error-primary p-4 ring-1 ring-error_subtle ring-inset">
-            <AlertCircle className="mt-0.5 size-5 shrink-0 text-error-primary" />
-            <div className="text-sm">
-              <p className="font-medium text-error-primary">No se pudo completar la búsqueda</p>
-              <p className="mt-0.5 text-error-primary">{search.error.message}</p>
-            </div>
-          </div>
-        )}
-
-        {search.isSuccess && route && (
-          <ResultsTable offers={search.data} origin={route.origin} destination={route.destination} />
-        )}
-
-        {route && <PriceHistoryChart origin={route.origin} destination={route.destination} />}
       </main>
     </div>
   )
