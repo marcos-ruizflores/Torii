@@ -10,6 +10,7 @@ import { Select } from '@/components/base/select/select'
 import { cx } from '@/utils/cx'
 import type { DayOfWeek, SearchPrecision, SearchRequest, User } from '../api/types'
 import { FlapText } from './board/FlapText'
+import { BOARD_COLS_LG } from './board/grid'
 
 interface Props {
   onSearch: (request: SearchRequest) => void
@@ -191,16 +192,17 @@ export function SearchForm({ onSearch, loading, plan, remaining }: Props) {
   return (
     <section
       aria-labelledby="search-title"
-      className="board-form rounded-xl bg-secondary p-5 ring-1 ring-secondary ring-inset sm:p-6"
+      className="board-form rounded-xl bg-secondary py-5 ring-1 ring-secondary ring-inset sm:py-6"
     >
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 px-5">
         <h2 id="search-title" className="font-display text-lg font-semibold tracking-wide text-primary uppercase">
           Tu viaje
         </h2>
         <TripModeSwitch weekends={weekendsOnly} onChange={setWeekendsOnly} />
       </div>
 
-      <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5 lg:grid-cols-12">
+      {/* From lg the fields sit on the results board's columns, so the two panels line up. */}
+      <div className={cx('mt-5 grid grid-cols-2 gap-x-4 gap-y-5 px-5', BOARD_COLS_LG)}>
         <Input
           label="Origen"
           placeholder="BCN"
@@ -208,7 +210,7 @@ export function SearchForm({ onSearch, loading, plan, remaining }: Props) {
           hint="Código IATA"
           value={origin}
           maxLength={3}
-          className="lg:col-span-2"
+          className="lg:col-span-1"
           onChange={(value) => setOrigin(value.toUpperCase())}
         />
         <Input
@@ -218,11 +220,11 @@ export function SearchForm({ onSearch, loading, plan, remaining }: Props) {
           hint="Código IATA"
           value={destination}
           maxLength={3}
-          className="lg:col-span-2"
+          className="lg:col-span-1"
           onChange={(value) => setDestination(value.toUpperCase())}
         />
 
-        <div className="col-span-2 flex flex-col gap-1.5 lg:col-span-4">
+        <div className="col-span-2 flex flex-col gap-1.5 lg:col-span-2">
           <span className="board-label">Ventana de vacaciones</span>
           <DateRangePicker
             value={range}
@@ -239,7 +241,7 @@ export function SearchForm({ onSearch, loading, plan, remaining }: Props) {
               label="Salgo el"
               items={WEEKDAYS}
               selectedKey={departDay}
-              className="lg:col-span-2"
+              className="lg:col-span-1"
               onSelectionChange={(key) => setDepartDay(key as DayOfWeek)}
             >
               {(item) => <Select.Item id={item.id} label={item.label} />}
@@ -249,7 +251,7 @@ export function SearchForm({ onSearch, loading, plan, remaining }: Props) {
               items={WEEKDAYS}
               selectedKey={returnDay}
               hint={`${nights} ${nights === 1 ? 'noche' : 'noches'}`}
-              className="lg:col-span-2"
+              className="lg:col-span-1"
               onSelectionChange={(key) => setReturnDay(key as DayOfWeek)}
             >
               {(item) => <Select.Item id={item.id} label={item.label} />}
@@ -262,7 +264,7 @@ export function SearchForm({ onSearch, loading, plan, remaining }: Props) {
               minValue={1}
               maxValue={365}
               value={baseDuration}
-              className="lg:col-span-2"
+              className="lg:col-span-1"
               onChange={(v) => setBaseDuration(Number.isNaN(v) ? 1 : v)}
             />
             <InputNumber
@@ -271,7 +273,7 @@ export function SearchForm({ onSearch, loading, plan, remaining }: Props) {
               minValue={0}
               maxValue={30}
               value={variability}
-              className="lg:col-span-2"
+              className="lg:col-span-1"
               onChange={(v) => setVariability(Number.isNaN(v) ? 0 : v)}
             />
           </>
@@ -283,7 +285,7 @@ export function SearchForm({ onSearch, loading, plan, remaining }: Props) {
           minValue={0}
           maxValue={3}
           value={maxStops}
-          className="lg:col-span-2"
+          className="lg:col-span-1"
           onChange={(v) => setMaxStops(Number.isNaN(v) ? 0 : v)}
         />
         <InputNumber
@@ -292,7 +294,7 @@ export function SearchForm({ onSearch, loading, plan, remaining }: Props) {
           minValue={1}
           maxValue={50}
           value={topN}
-          className="lg:col-span-2"
+          className="lg:col-span-1"
           onChange={(v) => setTopN(Number.isNaN(v) ? 1 : v)}
         />
         <Select
@@ -324,13 +326,13 @@ export function SearchForm({ onSearch, loading, plan, remaining }: Props) {
           hint="Opcional, en euros"
           placeholder="Sin límite"
           minValue={0}
-          className="col-span-2 sm:col-span-1 lg:col-span-2"
+          className="col-span-2 sm:col-span-1 lg:col-span-1"
           value={maxPrice ?? NaN}
           onChange={(v) => setMaxPrice(Number.isNaN(v) ? null : v)}
         />
 
-        <div className="col-span-2 flex flex-wrap items-end justify-between gap-4 lg:col-span-3 lg:flex-col lg:items-end lg:justify-end">
-          <div className="flex flex-col items-start gap-1.5 lg:items-end" aria-live="polite">
+        <div className="col-span-2 flex flex-wrap items-end justify-between gap-4 lg:col-span-4 lg:flex-nowrap">
+          <div className="flex flex-col items-start gap-1.5" aria-live="polite">
             <span className="board-label">Esta búsqueda hará</span>
             <span className="flex items-center gap-2">
               <FlapText
@@ -364,7 +366,7 @@ export function SearchForm({ onSearch, loading, plan, remaining }: Props) {
       </div>
 
       {(overQuota || load === 'high') && (
-        <p className="mt-4 flex items-start gap-2 text-sm text-error-primary">
+        <p className="mt-4 flex items-start gap-2 px-5 text-sm text-error-primary">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           {overQuota
             ? `Te quedan ${remaining} consultas este mes y esta búsqueda necesita ${estimatedQueries}. Acorta la ventana o reduce la flexibilidad.`

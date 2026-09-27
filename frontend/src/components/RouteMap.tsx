@@ -1,4 +1,5 @@
-import { ComposableMap, Geographies, Geography, Line, Marker } from 'react-simple-maps'
+import { geoEqualEarth, geoInterpolate } from 'd3-geo'
+import { ComposableMap, Geographies, Geography, Line, Marker, type ProjectionFunction } from 'react-simple-maps'
 import { token } from '@/utils/token'
 import { lookupAirport } from '../api/airports'
 import { FlapText } from './board/FlapText'
@@ -11,21 +12,40 @@ interface Props {
 // World TopoJSON from a CDN (the usual react-simple-maps setup).
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 
+/** Taller than wide on purpose: it sits next to the price chart and matches its height. */
 const WIDTH = 600
-const HEIGHT = 380
-/** Scale that fits the whole world in WIDTH with the Equal Earth projection. */
-const WORLD_SCALE = 115
+const HEIGHT = 460
+/** Room around the route for the airport labels. */
+const PAD = 48
+/** Cap for short hops (e.g. BCN–MAD), so the map never zooms into a blur of coastline. */
+const MAX_SCALE = 2200
 
 /**
- * Centre and zoom that frame the route: short hops get a close-up, long hauls stay
- * close to the world view.
+ * Equal Earth projection fitted to the great-circle arc between the two airports,
+ * so every route fills the panel: a long haul frames its arc, a short hop gets a
+ * close-up (up to MAX_SCALE).
  */
-function frame(from: [number, number], to: [number, number]) {
-  const lon = (from[0] + to[0]) / 2
-  const lat = (from[1] + to[1]) / 2
-  const span = Math.hypot(from[0] - to[0], from[1] - to[1])
-  const scale = Math.min(1600, Math.max(WORLD_SCALE, (WORLD_SCALE * 180) / (span * 1.4 + 30)))
-  return { rotate: [-lon, -lat * 0.6, 0] as [number, number, number], scale }
+function routeProjection(from: [number, number], to: [number, number]) {
+  const arc = geoInterpolate(from, to)
+  const coordinates = Array.from({ length: 33 }, (_, i) => arc(i / 32))
+  const mid = arc(0.5)
+  const projection = geoEqualEarth()
+    .rotate([-mid[0], 0])
+    .fitExtent(
+      [
+        [PAD, PAD],
+        [WIDTH - PAD, HEIGHT - PAD],
+      ],
+      { type: 'LineString', coordinates },
+    )
+  if (projection.scale() > MAX_SCALE) {
+    projection.scale(MAX_SCALE)
+    const [x, y] = projection(mid) ?? [WIDTH / 2, HEIGHT / 2]
+    const [tx, ty] = projection.translate()
+    projection.translate([tx + WIDTH / 2 - x, ty + HEIGHT / 2 - y])
+  }
+  // react-simple-maps uses a function passed as `projection` as the projection itself.
+  return projection as unknown as ProjectionFunction
 }
 
 /** Board panel header: name on the left, the route in flaps next to it. */
@@ -76,8 +96,7 @@ export function RouteMap({ origin, destination }: Props) {
       </p>
       <div className="flex flex-1 items-center px-2 pb-2">
         <ComposableMap
-          projection="geoEqualEarth"
-          projectionConfig={frame(from.coordinates, to.coordinates)}
+          projection={routeProjection(from.coordinates, to.coordinates)}
           width={WIDTH}
           height={HEIGHT}
           style={{ width: '100%', height: 'auto' }}
@@ -108,7 +127,7 @@ export function RouteMap({ origin, destination }: Props) {
           {/* Origin marker (ink). */}
           <Marker coordinates={from.coordinates}>
             <rect x={-5} y={-5} width={10} height={10} fill={ink} />
-            <text textAnchor="middle" y={-13} fontSize={17} fontWeight={600} fontFamily={labelFont} fill={ink}>
+            <text textAnchor="middle" y={-14} fontSize={20} fontWeight={600} fontFamily={labelFont} fill={ink}>
               {origin}
             </text>
           </Marker>
@@ -116,7 +135,7 @@ export function RouteMap({ origin, destination }: Props) {
           {/* Destination marker (signal). */}
           <Marker coordinates={to.coordinates}>
             <rect x={-5} y={-5} width={10} height={10} fill={signal} />
-            <text textAnchor="middle" y={-13} fontSize={17} fontWeight={600} fontFamily={labelFont} fill={signal}>
+            <text textAnchor="middle" y={-14} fontSize={20} fontWeight={600} fontFamily={labelFont} fill={signal}>
               {destination}
             </text>
           </Marker>

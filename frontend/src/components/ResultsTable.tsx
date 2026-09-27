@@ -3,6 +3,7 @@ import { Button } from '@/components/base/buttons/button'
 import { cx } from '@/utils/cx'
 import type { FlightOffer, PriceInsight } from '../api/types'
 import { FlapBlank, FlapText } from './board/FlapText'
+import { BOARD_COLS_MD } from './board/grid'
 
 type BoardState = 'idle' | 'loading' | 'error' | 'success'
 
@@ -19,8 +20,7 @@ interface Props {
  * Fixed columns, like a real departures board: dates, nights and prices always line
  * up from one row to the next. Below md the row stacks into a compact block.
  */
-const COLUMNS =
-  'md:grid md:grid-cols-[6.5rem_6.5rem_4rem_minmax(7rem,1fr)_minmax(6.5rem,8rem)_8rem_7rem_7.5rem] md:items-center md:gap-x-4'
+const COLUMNS = cx('md:grid md:items-center md:gap-x-4', BOARD_COLS_MD)
 
 /** "2026-09-03" -> "3 SEP". */
 function boardDate(iso: string): string {
