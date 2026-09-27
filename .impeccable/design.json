@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-27T20:30:00Z",
+  "title": "Design System: Torii",
+  "extensions": {
+    "colorMeta": {
+      "signal-yellow": { "role": "primary", "displayName": "Signal Yellow", "canonical": "rgb(255 198 41)", "tonalRamp": ["#3d2c00", "#6b4d00", "#9c7100", "#c99300", "#ffc629", "#ffd65c", "#ffe38a", "#fff9e6"] },
+      "signal-yellow-hover": { "role": "primary", "displayName": "Signal Yellow Hover", "canonical": "rgb(255 209 82)", "tonalRamp": ["#3d2c00", "#6b4d00", "#9c7100", "#c99300", "#ffd152", "#ffe38a", "#fff0bf", "#fffcf0"] },
+      "signal-yellow-deep": { "role": "primary", "displayName": "Signal Yellow Deep", "canonical": "rgb(201 147 0)", "tonalRamp": ["#3d2c00", "#6b4d00", "#9c7100", "#c99300", "#ffc629", "#ffd65c", "#ffe38a", "#fff9e6"] },
+      "ink-on-signal": { "role": "primary", "displayName": "Ink on Signal", "canonical": "rgb(21 18 10)", "tonalRamp": ["#15120a", "#2a2515", "#403820", "#574c2c", "#6e6139", "#877847", "#a19157", "#bcab6a"] },
+      "glyph-white": { "role": "neutral", "displayName": "Glyph White", "canonical": "rgb(238 234 224)", "tonalRamp": ["#3a3830", "#57544a", "#747065", "#918d80", "#aeaa9d", "#cbc7ba", "#eeeae0", "#f7f5ef"] },
+      "graphite-ground": { "role": "neutral", "displayName": "Graphite Ground", "canonical": "rgb(17 19 23)", "tonalRamp": ["#111317", "#181b20", "#22262d", "#353b45", "#505762", "#707782", "#969ca6", "#c8ccd3"] },
+      "graphite-panel": { "role": "neutral", "displayName": "Graphite Panel", "canonical": "rgb(24 27 32)", "tonalRamp": ["#111317", "#181b20", "#22262d", "#353b45", "#505762", "#707782", "#969ca6", "#c8ccd3"] },
+      "graphite-raised": { "role": "neutral", "displayName": "Graphite Raised", "canonical": "rgb(34 38 45)", "tonalRamp": ["#111317", "#181b20", "#22262d", "#353b45", "#505762", "#707782", "#969ca6", "#c8ccd3"] },
+      "graphite-rule-strong": { "role": "neutral", "displayName": "Graphite Rule Strong", "canonical": "rgb(53 59 69)", "tonalRamp": ["#111317", "#181b20", "#22262d", "#353b45", "#505762", "#707782", "#969ca6", "#c8ccd3"] },
+      "graphite-mute": { "role": "neutral", "displayName": "Graphite Mute", "canonical": "rgb(80 87 98)", "tonalRamp": ["#111317", "#181b20", "#22262d", "#353b45", "#505762", "#707782", "#969ca6", "#c8ccd3"] },
+      "steel-text-secondary": { "role": "neutral", "displayName": "Steel Secondary", "canonical": "rgb(178 183 192)", "tonalRamp": ["#111317", "#22262d", "#353b45", "#505762", "#707782", "#969ca6", "#b2b7c0", "#dee1e6"] },
+      "steel-text-tertiary": { "role": "neutral", "displayName": "Steel Tertiary", "canonical": "rgb(150 156 166)", "tonalRamp": ["#111317", "#22262d", "#353b45", "#505762", "#707782", "#969ca6", "#b2b7c0", "#dee1e6"] },
+      "flap-tile": { "role": "neutral", "displayName": "Flap Tile", "canonical": "rgb(44 49 58)", "tonalRamp": ["#0a0b0d", "#181b20", "#242830", "#2c313a", "#353b45", "#505762", "#707782", "#969ca6"] },
+      "flap-tile-low": { "role": "neutral", "displayName": "Flap Tile Low", "canonical": "rgb(36 40 48)", "tonalRamp": ["#0a0b0d", "#181b20", "#242830", "#2c313a", "#353b45", "#505762", "#707782", "#969ca6"] },
+      "flap-seam": { "role": "neutral", "displayName": "Flap Seam", "canonical": "rgb(10 11 13)", "tonalRamp": ["#0a0b0d", "#111317", "#181b20", "#242830", "#2c313a", "#353b45", "#505762", "#707782"] },
+      "caution-orange": { "role": "secondary", "displayName": "Caution Orange", "canonical": "oklch(75% 0.183 55.934)", "tonalRamp": ["oklch(26.6% 0.079 36.259)", "oklch(40.8% 0.123 38.172)", "oklch(55.3% 0.195 38.402)", "oklch(64.6% 0.222 41.116)", "oklch(70.5% 0.213 47.604)", "oklch(75% 0.183 55.934)", "oklch(83.7% 0.128 66.29)", "oklch(95.4% 0.038 75.164)"] },
+      "caution-orange-solid": { "role": "secondary", "displayName": "Caution Orange Solid", "canonical": "oklch(70.5% 0.213 47.604)", "tonalRamp": ["oklch(26.6% 0.079 36.259)", "oklch(40.8% 0.123 38.172)", "oklch(55.3% 0.195 38.402)", "oklch(64.6% 0.222 41.116)", "oklch(70.5% 0.213 47.604)", "oklch(75% 0.183 55.934)", "oklch(83.7% 0.128 66.29)", "oklch(95.4% 0.038 75.164)"] },
+      "go-green": { "role": "secondary", "displayName": "Go Green", "canonical": "oklch(79.2% 0.209 151.711)", "tonalRamp": ["oklch(26.6% 0.065 152.934)", "oklch(39.3% 0.095 152.535)", "oklch(52.7% 0.154 150.069)", "oklch(62.7% 0.194 149.214)", "oklch(72.3% 0.219 149.579)", "oklch(79.2% 0.209 151.711)", "oklch(87.1% 0.15 154.449)", "oklch(96.2% 0.044 156.743)"] },
+      "fault-red": { "role": "secondary", "displayName": "Fault Red", "canonical": "oklch(70.4% 0.191 22.216)", "tonalRamp": ["oklch(25.8% 0.092 26.042)", "oklch(39.6% 0.141 25.723)", "oklch(50.5% 0.213 27.518)", "oklch(57.7% 0.245 27.325)", "oklch(63.7% 0.237 25.331)", "oklch(70.4% 0.191 22.216)", "oklch(80.8% 0.114 19.571)", "oklch(93.6% 0.032 17.717)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The single page headline; 30px/38px below 640px, 36px/44px above." },
+      "headline": { "displayName": "Headline", "purpose": "Titles of secondary pages; 24px/32px on the auth screens." },
+      "title": { "displayName": "Panel Title", "purpose": "Uppercase panel names: TU VIAJE, SALIDAS, RUTA, HISTÓRICO, tariff names." },
+      "glyph": { "displayName": "Board Glyph", "purpose": "Uppercase tabular board values: dates, nights, stops, verdict words, prices, input values (17px)." },
+      "body": { "displayName": "Body", "purpose": "Running text and empty-state explanations; lead paragraph at 18px/28px." },
+      "body-small": { "displayName": "Body Small", "purpose": "Times, sub-lines, helper text, nav links." },
+      "label": { "displayName": "Board Label", "purpose": "Uppercase column headers, field labels, counters and guide words." }
+    },
+    "shadows": [
+      { "name": "flap-tile", "value": "inset 0 1px 0 rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.45)", "purpose": "Split-flap tiles only: top highlight and a tight contact shadow." },
+      { "name": "control-inset", "value": "0px 0px 0px 1px rgba(0, 0, 0, 0.18) inset, 0px -2px 0px 0px rgba(0, 0, 0, 0.05) inset, 0px 1px 2px rgba(0, 0, 0, 0.05)", "purpose": "Inherited near-invisible inset on primary and secondary buttons." },
+      { "name": "input", "value": "0px 1px 2px rgba(0, 0, 0, 0.05)", "purpose": "Input fields." }
+    ],
+    "motion": [
+      { "name": "flap-flip-step", "value": "38ms", "purpose": "Interval between split-flap character flips on a value change." },
+      { "name": "flap-settle", "value": "5 flips + 1.4 per tile position (about 450-650ms total)", "purpose": "Left-to-right settle of FlapText, once per change; instant under prefers-reduced-motion." },
+      { "name": "flap-tick", "value": "420ms cubic-bezier(0.22, 1, 0.36, 1) infinite, delays 0.09s / 0.17s", "purpose": "Blank tiles ticking while a scan runs; disabled under prefers-reduced-motion." },
+      { "name": "state-feedback", "value": "150ms", "purpose": "Colour transitions on nav links and switch options." },
+      { "name": "control-feedback", "value": "100ms linear", "purpose": "Button and input hover and focus transitions." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Signal yellow action: scan, create account, book the cheapest row.",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.35-4.35\"/></svg>Escanear fechas</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 6px; background: #ffc629; color: #15120a; padding: 10px 16px; border: 0; border-radius: 5px; font-family: 'Barlow', system-ui, sans-serif; font-size: 16px; line-height: 24px; font-weight: 600; box-shadow: 0 0 0 1px rgba(0,0,0,0.18) inset, 0 -2px 0 0 rgba(0,0,0,0.05) inset, 0 1px 2px rgba(0,0,0,0.05); cursor: pointer; transition: background 100ms linear; } .ds-btn-primary svg { opacity: 0.7; } .ds-btn-primary:hover { background: #ffd152; } .ds-btn-primary:hover svg { opacity: 1; } .ds-btn-primary:focus-visible { outline: 2px solid #ffd152; outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Graphite button for every non-winning action (Reservar, Repetir, Iniciar sesión).",
+      "html": "<button class=\"ds-btn-secondary\">Reservar<svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M7 17 17 7M7 7h10v10\"/></svg></button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; gap: 4px; background: #111317; color: #b2b7c0; padding: 8px 12px; border: 0; border-radius: 5px; font-family: 'Barlow', system-ui, sans-serif; font-size: 14px; line-height: 20px; font-weight: 600; box-shadow: 0 0 0 1px #353b45 inset, 0 1px 2px rgba(0,0,0,0.05); cursor: pointer; transition: background 100ms linear, color 100ms linear; } .ds-btn-secondary svg { color: #505762; } .ds-btn-secondary:hover { background: #181b20; color: #dee1e6; } .ds-btn-secondary:focus-visible { outline: 2px solid #ffd152; outline-offset: 2px; }"
+    },
+    {
+      "name": "Board Input",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Labelled field: condensed caps label as column header, glyph-weight value.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Origen</span><input class=\"ds-input\" value=\"BCN\"/><span class=\"ds-field-hint\">Código IATA</span></label>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 6px; width: 180px; } .ds-field-label { font-family: 'Barlow Semi Condensed', 'Barlow', sans-serif; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #969ca6; } .ds-input { background: #111317; color: #eeeae0; border: 0; border-radius: 5px; padding: 10px 14px; font-family: 'Barlow Semi Condensed', 'Barlow', sans-serif; font-size: 17px; font-weight: 600; letter-spacing: 0.02em; box-shadow: 0 0 0 1px #353b45 inset, 0 1px 2px rgba(0,0,0,0.05); caret-color: #ffc629; outline: none; transition: box-shadow 100ms linear; } .ds-input:focus-visible { box-shadow: 0 0 0 2px #ffc629 inset; } .ds-field-hint { font-family: 'Barlow', sans-serif; font-size: 14px; line-height: 20px; color: #969ca6; }"
+    },
+    {
+      "name": "Header Navigation",
+      "kind": "nav",
+      "refersTo": "nav-link",
+      "description": "Top bar links; the active page is yellow, the quota counter sits after a hairline.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-link ds-nav-active\" href=\"#\">Planes</a><a class=\"ds-nav-link\" href=\"#\">Mis búsquedas</a><span class=\"ds-nav-rule\"></span><span class=\"ds-quota\"><span class=\"ds-quota-text\"><b>12</b>/30 consultas</span><span class=\"ds-quota-track\"><span class=\"ds-quota-fill\"></span></span></span></nav>",
+      "css": ".ds-nav { display: flex; align-items: center; gap: 8px; background: #111317; padding: 12px; } .ds-nav-link { font-family: 'Barlow', sans-serif; font-size: 14px; font-weight: 600; color: #b2b7c0; text-decoration: none; padding: 6px 10px; border-radius: 4px; transition: color 150ms; } .ds-nav-link:hover { color: #eeeae0; } .ds-nav-link:focus-visible { outline: 2px solid #ffd152; outline-offset: 2px; } .ds-nav-active { color: #ffc629; } .ds-nav-rule { width: 1px; height: 32px; background: #22262d; margin: 0 8px; } .ds-quota { display: flex; flex-direction: column; gap: 4px; } .ds-quota-text { font-family: 'Barlow Semi Condensed', sans-serif; font-size: 12px; line-height: 1; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #969ca6; } .ds-quota-text b { color: #eeeae0; font-weight: 600; } .ds-quota-track { display: block; width: 96px; height: 4px; border-radius: 999px; background: #22262d; overflow: hidden; } .ds-quota-fill { display: block; width: 40%; height: 100%; border-radius: 999px; background: #ffc629; }"
+    },
+    {
+      "name": "Trip Mode Switch",
+      "kind": "chip",
+      "refersTo": "switch-option-active",
+      "description": "Two-option segmented switch in a graphite tray; the active option is solid yellow.",
+      "html": "<div class=\"ds-switch\" role=\"group\"><button class=\"ds-switch-opt\" aria-pressed=\"true\">Vacaciones</button><button class=\"ds-switch-opt\" aria-pressed=\"false\">Escapadas</button></div>",
+      "css": ".ds-switch { display: inline-flex; gap: 4px; padding: 4px; background: #111317; border-radius: 5px; box-shadow: 0 0 0 1px #22262d inset; } .ds-switch-opt { border: 0; background: transparent; color: #969ca6; padding: 8px 16px; border-radius: 4px; font-family: 'Barlow Semi Condensed', sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0.025em; text-transform: uppercase; cursor: pointer; transition: color 150ms, background 150ms; } .ds-switch-opt:hover { color: #eeeae0; } .ds-switch-opt[aria-pressed=\"true\"] { background: #ffc629; color: #15120a; } .ds-switch-opt:focus-visible { outline: 2px solid #ffd152; outline-offset: 2px; }"
+    },
+    {
+      "name": "Board Panel",
+      "kind": "card",
+      "refersTo": "board-panel",
+      "description": "Flat graphite panel with a hairline header band: panel title plus flap route.",
+      "html": "<section class=\"ds-panel\"><header class=\"ds-panel-head\"><h2 class=\"ds-panel-title\">Ruta</h2><span class=\"ds-flaps\"><span class=\"ds-flap\">B</span><span class=\"ds-flap\">C</span><span class=\"ds-flap\">N</span></span></header><p class=\"ds-panel-body\">Barcelona → Tokio</p></section>",
+      "css": ".ds-panel { width: 360px; background: #181b20; border-radius: 6px; box-shadow: 0 0 0 1px #22262d inset; overflow: hidden; } .ds-panel-head { display: flex; align-items: center; gap: 16px; padding: 16px 20px; border-bottom: 1px solid #22262d; } .ds-panel-title { margin: 0; font-family: 'Barlow Semi Condensed', sans-serif; font-size: 18px; line-height: 28px; font-weight: 600; letter-spacing: 0.025em; text-transform: uppercase; color: #eeeae0; } .ds-panel-body { margin: 0; padding: 16px 20px 20px; font-family: 'Barlow', sans-serif; font-size: 14px; color: #b2b7c0; } .ds-flaps { display: inline-flex; gap: 0.08em; font-size: 18px; } .ds-flap { position: relative; display: inline-grid; place-items: center; width: 0.86em; height: 1.3em; border-radius: 0.14em; background: linear-gradient(#2c313a 0 50%, #242830 50% 100%); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.45); font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; line-height: 1; color: #eeeae0; } .ds-flap::after { content: ''; position: absolute; inset: 50% 0 auto; height: 1px; background: #0a0b0d; opacity: 0.85; }"
+    },
+    {
+      "name": "Split-flap Price",
+      "kind": "custom",
+      "refersTo": "flap-tile",
+      "description": "The winning price in signal-tone flap tiles; settles once per change.",
+      "html": "<span class=\"ds-flap-row\" aria-label=\"755 €\"><span class=\"ds-flap-t\">7</span><span class=\"ds-flap-t\">5</span><span class=\"ds-flap-t\">5</span><span class=\"ds-flap-t\">€</span></span>",
+      "css": ".ds-flap-row { display: inline-flex; gap: 0.08em; font-size: 24px; } .ds-flap-t { position: relative; display: inline-grid; place-items: center; width: 0.86em; height: 1.3em; border-radius: 0.14em; background: linear-gradient(#2c313a 0 50%, #242830 50% 100%); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.45); font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; line-height: 1; color: #ffc629; font-variant-numeric: tabular-nums; } .ds-flap-t::after { content: ''; position: absolute; inset: 50% 0 auto; height: 1px; background: #0a0b0d; opacity: 0.85; } .ds-flap-row:hover .ds-flap-t { animation: ds-tick 0.42s cubic-bezier(0.22, 1, 0.36, 1) 1; } @keyframes ds-tick { 50% { transform: scaleY(0.82); filter: brightness(1.35); } } @media (prefers-reduced-motion: reduce) { .ds-flap-row:hover .ds-flap-t { animation: none; } }"
+    },
+    {
+      "name": "Price Verdict",
+      "kind": "custom",
+      "description": "Worded verdict with a square mark and the usual range; never colour alone.",
+      "html": "<div class=\"ds-verdicts\"><span class=\"ds-verdict\"><span class=\"ds-verdict-word ds-low\"><i></i>Precio bajo</span><span class=\"ds-verdict-range\">Lo normal: 790–1100 €</span></span><span class=\"ds-verdict\"><span class=\"ds-verdict-word ds-typ\"><i></i>Precio habitual</span><span class=\"ds-verdict-range\">Lo normal: 610–1050 €</span></span><span class=\"ds-verdict\"><span class=\"ds-verdict-word ds-high\"><i></i>Precio alto</span><span class=\"ds-verdict-range\">Lo normal: 610–1050 €</span></span></div>",
+      "css": ".ds-verdicts { display: flex; gap: 24px; background: #181b20; padding: 16px 20px; } .ds-verdict { display: flex; flex-direction: column; gap: 2px; } .ds-verdict-word { display: flex; align-items: center; gap: 6px; font-family: 'Barlow Semi Condensed', sans-serif; font-size: 14px; font-weight: 600; text-transform: uppercase; } .ds-verdict-word i { width: 8px; height: 8px; border-radius: 1px; } .ds-low { color: oklch(79.2% 0.209 151.711); } .ds-low i { background: oklch(79.2% 0.209 151.711); } .ds-typ { color: #b2b7c0; } .ds-typ i { background: #505762; } .ds-high { color: oklch(75% 0.183 55.934); } .ds-high i { background: oklch(70.5% 0.213 47.604); } .ds-verdict-range { font-family: 'Barlow', sans-serif; font-size: 12px; color: #969ca6; white-space: nowrap; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Departures Board",
+    "overview": "Torii is an airport departures board for one traveller's trip. Every date combination the scan tried becomes a row; the cheapest lands on top and is the only thing on the board that glows. The whole app lives on one dark graphite board: cool, dense, fixed-column, read in condensed capitals and tabular figures, with split-flap tiles for the glyphs that change (route, winning price, lookup counter) and for the wordmark.\n\nDensity is operational, not editorial. Panels are flat graphite slabs separated by hairline rules; information sits in labelled columns that align from row to row, like a real board. Colour carries meaning and almost nothing else: one signal yellow taken from Spanish airport wayfinding marks the action, the current state and the answer; green and orange speak only in verdicts and stop counts, always next to a word.\n\nThe system rejects the category default of a white search card above a stack of rounded result cards. Results are rows on a board, not cards.",
+    "keyCharacteristics": [
+      "Always dark: the `.dark-mode` palette is set on `<html>`; there is no light theme.",
+      "One accent, signal yellow, reserved for action, current state and the winning price.",
+      "Barlow Semi Condensed caps for every board glyph and label; Barlow for running text; tabular figures everywhere.",
+      "Split-flap tiles for changing glyphs and the wordmark; blank ticking flaps while scanning.",
+      "Fixed-column results grid; flat panels with hairline rules; cut corners (4-8px)."
+    ],
+    "rules": [
+      { "name": "The One Signal Rule", "body": "Signal yellow means \"act here\", \"you are here\" or \"this is the answer\". It never decorates, never tags a category, never warns.", "section": "colors" },
+      { "name": "The Worded Verdict Rule", "body": "Status colour never stands alone. Every verdict is a word in condensed caps plus a small square mark (\"PRECIO BAJO\", \"PRECIO HABITUAL\", \"PRECIO ALTO\"); \"DIRECTO\" is a word, not a green dot.", "section": "colors" },
+      { "name": "The Warm Glyph Rule", "body": "Only glyph white carries warmth; every other neutral stays cool graphite.", "section": "colors" },
+      { "name": "The Board Voice Rule", "body": "Anything the board displays (labels, values, verdicts, panel names) is Barlow Semi Condensed in capitals; anything the board says to you in a sentence is Barlow in sentence case.", "section": "typography" },
+      { "name": "The Tabular Rule", "body": "Figures are always tabular. A price or date that shifts width between rows is a bug.", "section": "typography" },
+      { "name": "The Flat Board Rule", "body": "Panels never lift. Separation is a hairline or a tonal step, never a drop shadow.", "section": "elevation" },
+      { "name": "The Recessed Winner Rule", "body": "The cheapest row and the user's current tariff drop to Graphite Ground inside their panel; emphasis is a recess, not a lift or a border.", "section": "elevation" }
+    ],
+    "dos": [
+      "**Do** keep every screen on the dark graphite board: Graphite Ground page, Graphite Panel panels, 1px Graphite Raised hairlines.",
+      "**Do** reserve Signal Yellow (#ffc629) for the primary action, the current state and the winning price; use #ffd152 only for hover.",
+      "**Do** put Ink on Signal (#15120a) on every yellow surface.",
+      "**Do** set column headers and field labels in Barlow Semi Condensed 12px, 600, 0.08em, uppercase.",
+      "**Do** align tabular data in fixed columns on desktop and a fixed two-column grid per row on phones.",
+      "**Do** word every verdict and pair it with a square mark: green \"PRECIO BAJO\", dim \"PRECIO HABITUAL\", orange \"PRECIO ALTO\".",
+      "**Do** use split-flap tiles for values that change on the board and for the wordmark, settling once per change and static under prefers-reduced-motion.",
+      "**Do** show idle and scanning results as rows of blank flaps, not spinners or skeleton bars."
+    ],
+    "donts": [
+      "**Don't** use yellow for warnings, caution or category tags; caution is orange (oklch(75% 0.183 55.934)).",
+      "**Don't** show status by colour alone.",
+      "**Don't** render results as rounded cards; they are rows on one board.",
+      "**Don't** lift panels with drop shadows; the flap tile's contact shadow is the only visible one.",
+      "**Don't** round panels, buttons, inputs or tiles past 8px.",
+      "**Don't** add a light theme or a white surface.",
+      "**Don't** flip tiles on every render or loop them outside the scanning state."
+    ]
+  }
+}

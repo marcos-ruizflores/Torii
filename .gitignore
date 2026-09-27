@@ -34,3 +34,9 @@ build/
 
 ### macOS ###
 .DS_Store
+
+### Impeccable (local only) ###
+.impeccable/review/
+.impeccable/config.local.json
+.claude/settings.local.json
+.claude/skills/
