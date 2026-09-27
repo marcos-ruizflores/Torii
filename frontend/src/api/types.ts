@@ -29,6 +29,14 @@ export interface FlightOffer {
   returnDepartureTime: string | null // return leg departure time (null with SerpApi)
   stopovers: string[] // IATA codes of the stopover airports
   bookingUrl: string
+  priceInsight: PriceInsight | null // Google's verdict, only some sources send it
+}
+
+/** Google's verdict on a price compared to other dates for the same route. */
+export interface PriceInsight {
+  level: 'low' | 'typical' | 'high' | string
+  typicalLow: number | null
+  typicalHigh: number | null
 }
 
 /** Shape of a 400 error (ProblemDetail, RFC 7807). */

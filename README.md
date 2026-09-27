@@ -23,15 +23,18 @@ of the design is about making as few calls as possible:
   Java 21 virtual threads with a semaphore to stay under the providers' rate limits.
 - **Per date pair cache** (Caffeine) with a TTL that depends on how close the trip is:
   7 days for flights months away, 10 minutes for flights in the next couple of days.
-- **Failover between providers** (SerpApi / Google Flights, FlightAPI.io, Amadeus). When
-  one runs out of quota it gets parked for a cooldown and the next one takes over. A
-  deterministic mock provider sits at the end so the app always answers.
+- **Failover between providers** (FlightPowers and SerpApi for Google Flights data,
+  FlightAPI.io, Amadeus). When one runs out of quota it gets parked for a cooldown and
+  the next one takes over. A deterministic mock provider sits at the end so the app
+  always answers.
+- **Price verdict** on each offer (low / typical / high, with the usual range for the
+  route) when the source provides Google's price insights.
 - **Search precision levels** (FAST / BALANCED / EXHAUSTIVE) that trade coverage for
   fewer calls, tied to **per-plan monthly quotas** that are checked before any call is made.
 - **Price history** per route, built for free from real searches and shown as a chart.
 
 ```
-SlidingWindowEngine -> Cache( Failover( [SerpApi, FlightAPI, Amadeus, Mock] ) )
+SlidingWindowEngine -> Cache( Failover( [FlightPowers, Amadeus, SerpApi, FlightAPI, Mock] ) )
 ```
 
 The engine only knows about the `FlightProvider` interface, so the cache, the failover
@@ -57,6 +60,7 @@ Requirements: JDK 21 and Node 24.
 export SUPABASE_DB_URL=...          # or any PostgreSQL JDBC URL
 export SUPABASE_DB_USER=...
 export SUPABASE_DB_PASSWORD=...
+export FLIGHTPOWERS_API_KEY=...     # optional, RapidAPI key for FlightPowers
 export SERPAPI_KEY=...              # optional, falls back to the mock provider
 ./mvnw spring-boot:run
 

@@ -25,6 +25,8 @@ import java.util.List;
  *       and price, different times or stops). They can be missing ({@code null} or an
  *       empty list) when the source doesn't provide them, e.g. SerpApi doesn't give
  *       the return time without a second call.</li>
+ *   <li>{@code priceInsight} is Google's low / typical / high verdict for the price.
+ *       Only some sources send it, so it's usually {@code null}.</li>
  * </ul>
  */
 public record FlightOffer(
@@ -37,8 +39,17 @@ public record FlightOffer(
         LocalTime departureTime,
         LocalTime returnDepartureTime,
         List<String> stopovers,
-        String bookingUrl
+        String bookingUrl,
+        PriceInsight priceInsight
 ) {
+    /** Constructor without a price verdict, for the sources that don't provide one. */
+    public FlightOffer(String airline, BigDecimal price, String currency, int stops,
+                       LocalDate departDate, LocalDate returnDate, LocalTime departureTime,
+                       LocalTime returnDepartureTime, List<String> stopovers, String bookingUrl) {
+        this(airline, price, currency, stops, departDate, returnDate,
+                departureTime, returnDepartureTime, stopovers, bookingUrl, null);
+    }
+
     /**
      * Convenience constructor without times and stopovers, for code and tests that
      * don't need them.

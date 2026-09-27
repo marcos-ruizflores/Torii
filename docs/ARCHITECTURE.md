@@ -51,6 +51,7 @@ flowchart TB
         ENG["SlidingWindowEngine<br/>(sliding window,<br/>virtual threads + semaphore)"]
         CACHE["CachingFlightProvider<br/>(Caffeine, TTL based<br/>on how soon the trip is)"]
         FAIL["FailoverFlightProvider<br/>(tries sources in order,<br/>parks exhausted ones)"]
+        P0["FlightPowers<br/>(Google Flights, RapidAPI)"]
         P1["SerpApi<br/>(Google Flights)"]
         P2["FlightAPI.io"]
         P3["Amadeus<br/>(ready, off by default)"]
@@ -69,7 +70,7 @@ flowchart TB
     SS --> PHS & SHS
     ENG -- "searchOffers(date pair)" --> CACHE
     CACHE -- "miss" --> FAIL
-    FAIL --> P1 & P2 & P3 & P4
+    FAIL --> P0 & P1 & P2 & P3 & P4
     AS & QS & PHS & SHS -- "JPA/Hibernate" --> DB
 ```
 
@@ -210,6 +211,7 @@ classDiagram
         +ttlFor(departDate) Duration
     }
 
+    class FlightPowersFlightProvider
     class SerpApiFlightProvider
     class FlightApiFlightProvider
     class AmadeusFlightProvider
@@ -218,6 +220,7 @@ classDiagram
     SlidingWindowEngine --> FlightProvider : uses
     CachingFlightProvider ..|> FlightProvider
     FailoverFlightProvider ..|> FlightProvider
+    FlightPowersFlightProvider ..|> FlightProvider
     SerpApiFlightProvider ..|> FlightProvider
     FlightApiFlightProvider ..|> FlightProvider
     AmadeusFlightProvider ..|> FlightProvider
@@ -230,7 +233,7 @@ classDiagram
 How it's actually wired (in `ProviderConfig`):
 
 ```
-Engine -> Cache( Failover( [SerpApi, FlightAPI, Amadeus*, Mock] ) )
+Engine -> Cache( Failover( [FlightPowers, Amadeus*, SerpApi, FlightAPI, Mock] ) )
 ```
 
 - **Decorator**: `CachingFlightProvider` wraps another provider and adds caching without

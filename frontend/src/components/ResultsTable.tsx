@@ -1,7 +1,7 @@
 import { Plane } from '@untitledui/icons'
 import { Badge } from '@/components/base/badges/badges'
 import { Button } from '@/components/base/buttons/button'
-import type { FlightOffer } from '../api/types'
+import type { FlightOffer, PriceInsight } from '../api/types'
 
 interface Props {
   offers: FlightOffer[]
@@ -84,6 +84,35 @@ function Leg({
   )
 }
 
+const VERDICTS = {
+  low: { label: 'Precio bajo', color: 'success' },
+  typical: { label: 'Precio habitual', color: 'gray' },
+  high: { label: 'Precio alto', color: 'warning' },
+} as const
+
+/**
+ * Google's verdict for this price (low / typical / high) plus the usual range for
+ * the route, when the source provides it.
+ */
+function PriceVerdict({ insight, symbol }: { insight: PriceInsight | null; symbol: string }) {
+  const verdict = insight ? VERDICTS[insight.level as keyof typeof VERDICTS] : undefined
+  if (!insight || !verdict) return null
+
+  const range =
+    insight.typicalLow != null && insight.typicalHigh != null
+      ? `Lo normal: ${Math.round(insight.typicalLow)}–${Math.round(insight.typicalHigh)} ${symbol}`
+      : null
+
+  return (
+    <div className="flex flex-col items-end gap-0.5">
+      <Badge type="pill-color" color={verdict.color} size="sm">
+        {verdict.label}
+      </Badge>
+      {range && <span className="text-xs text-tertiary">{range}</span>}
+    </div>
+  )
+}
+
 /**
  * Offers found, Skyscanner style: one card per offer, both legs on the left and
  * price + booking on the right. The price is ALWAYS the round-trip total.
@@ -108,6 +137,7 @@ export function ResultsTable({ offers, origin, destination }: Props) {
 
       {offers.map((o, i) => {
         const extra = o.price - cheapest
+        const symbol = o.currency === 'EUR' ? '€' : o.currency
         return (
           <article
             key={`${o.airline}-${o.departDate}-${i}`}
@@ -144,7 +174,7 @@ export function ResultsTable({ offers, origin, destination }: Props) {
             <div className="flex items-center justify-between gap-1 border-t border-secondary bg-secondary px-5 py-4 sm:w-52 sm:flex-col sm:items-end sm:justify-center sm:border-t-0 sm:border-l">
               <div className="text-right">
                 <div className="text-xl font-semibold text-primary">
-                  {o.price.toFixed(2)} {o.currency === 'EUR' ? '€' : o.currency}
+                  {o.price.toFixed(2)} {symbol}
                 </div>
                 {extra > 0 ? (
                   <div className="text-xs text-tertiary">+{extra.toFixed(2)} vs la más barata</div>
@@ -152,6 +182,7 @@ export function ResultsTable({ offers, origin, destination }: Props) {
                   <div className="text-xs text-tertiary">ida y vuelta</div>
                 )}
               </div>
+              <PriceVerdict insight={o.priceInsight} symbol={symbol} />
               <Button size="sm" color="primary" href={o.bookingUrl} target="_blank" rel="noreferrer">
                 Reservar
               </Button>

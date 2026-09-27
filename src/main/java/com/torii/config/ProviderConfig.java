@@ -8,6 +8,7 @@ import com.torii.provider.MockFlightProvider;
 import com.torii.provider.amadeus.AmadeusAuthClient;
 import com.torii.provider.amadeus.AmadeusFlightProvider;
 import com.torii.provider.flightapi.FlightApiFlightProvider;
+import com.torii.provider.flightpowers.FlightPowersFlightProvider;
 import com.torii.provider.serpapi.SerpApiFlightProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,8 +32,9 @@ import java.util.List;
  *       algorithm gets injected. Avoids repeating calls.</li>
  *   <li>The <b>failover</b> ({@link FailoverFlightProvider}) tries providers in order
  *       and moves on to the next one when a provider runs out of quota.</li>
- *   <li>Each real provider (Amadeus, SerpApi, FlightAPI) is only added when it's
- *       {@code enabled=true} in the config.</li>
+ *   <li>Each real provider (FlightPowers, Amadeus, SerpApi, FlightAPI) is only added
+ *       when it's {@code enabled=true} in the config. FlightPowers goes first because
+ *       it's the cheapest per call.</li>
  *   <li>{@link MockFlightProvider} always goes last as a safety net. It never fails,
  *       so the app always returns something even with no real APIs configured or all
  *       of them out of quota.</li>
@@ -40,7 +42,7 @@ import java.util.List;
  */
 @Configuration
 @EnableConfigurationProperties({CacheProperties.class, AmadeusProperties.class,
-        SerpApiProperties.class, FlightApiProperties.class})
+        SerpApiProperties.class, FlightApiProperties.class, FlightPowersProperties.class})
 public class ProviderConfig {
 
     private static final Logger log = LoggerFactory.getLogger(ProviderConfig.class);
@@ -67,9 +69,21 @@ public class ProviderConfig {
     public CachingFlightProvider cachingFlightProvider(
             MockFlightProvider mock, TripTtlPolicy ttlPolicy, Clock clock,
             CacheProperties cacheProps, AmadeusProperties amadeusProps,
-            SerpApiProperties serpApiProps, FlightApiProperties flightApiProps) {
+            SerpApiProperties serpApiProps, FlightApiProperties flightApiProps,
+            FlightPowersProperties flightPowersProps) {
 
         List<FlightProvider> providers = new ArrayList<>();
+
+        // FlightPowers first: cheapest source per call. Without a key it's skipped,
+        // so deploying this before setting FLIGHTPOWERS_API_KEY changes nothing.
+        if (flightPowersProps.enabled()) {
+            if (flightPowersProps.apiKey().isBlank()) {
+                log.warn("FlightPowers habilitado pero sin FLIGHTPOWERS_API_KEY: se omite");
+            } else {
+                providers.add(new FlightPowersFlightProvider(RestClient.builder(), flightPowersProps));
+                log.info("Proveedor Google Flights (FlightPowers) ACTIVADO");
+            }
+        }
 
         if (amadeusProps.enabled()) {
             AmadeusAuthClient auth = new AmadeusAuthClient(RestClient.builder(), amadeusProps, clock);

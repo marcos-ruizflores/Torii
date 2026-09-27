@@ -81,7 +81,7 @@ public class PriceHistoryService {
     private static String providerFromBookingUrl(String bookingUrl) {
         if (bookingUrl == null) return null;
         if (bookingUrl.contains("skyscanner")) return "FlightAPI";
-        if (bookingUrl.contains("google.com")) return "GoogleFlights(SerpApi)";
+        if (bookingUrl.contains("google.com")) return "GoogleFlights";
         if (bookingUrl.contains("amadeus")) return "Amadeus";
         return null;
     }
