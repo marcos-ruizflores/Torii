@@ -271,7 +271,8 @@ export function ResultsBoard({ state, offers = [], origin, destination, errorMes
           <p className="font-semibold text-primary">Aún no hay salidas en el panel.</p>
           <p className="mt-1 max-w-prose text-sm text-tertiary">
             Elige una ventana de fechas y cuántas noches quieres estar. Torii probará cada combinación de ida y
-            vuelta y colocará aquí las más baratas, con su veredicto de precio.
+            vuelta y colocará aquí las más baratas. Cuando la fuente lo permita, verás también si el precio es bajo,
+            habitual o alto para esa ruta.
           </p>
         </div>
       )}

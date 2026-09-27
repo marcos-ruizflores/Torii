@@ -90,9 +90,13 @@ export function PriceHistoryChart({ origin, destination }: Props) {
           <div className="flex flex-col gap-1 px-5 py-3">
             <dt className="board-label">Hoy</dt>
             <dd className="font-display text-xl font-semibold text-primary">{euros(stats.current)}</dd>
+            {/* Sign and figure stay together; on narrow cells "vs media" drops to its own line. */}
             <dd className={cx('text-xs', belowAverage ? 'text-success-primary' : 'text-warning-primary')}>
-              {belowAverage ? '−' : '+'}
-              {percent(Math.abs(stats.deltaPct))} vs media
+              <span className="whitespace-nowrap">
+                {belowAverage ? '−' : '+'}
+                {percent(Math.abs(stats.deltaPct))}
+              </span>{' '}
+              <span className="whitespace-nowrap">vs media</span>
             </dd>
           </div>
           <div className="flex flex-col gap-1 border-l border-secondary px-5 py-3">
