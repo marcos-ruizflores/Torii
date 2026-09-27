@@ -23,17 +23,20 @@ public record EmailProperties(
         @DefaultValue("https://api.resend.com") String baseUrl,
         @DefaultValue("") String apiKey,
         @DefaultValue("onboarding@resend.dev") String fromAddress,
-        @DefaultValue("Torii") String fromName
+        @DefaultValue("Torii") String fromName,
+        /** Public URL of the app, for the links inside the emails. */
+        @DefaultValue("https://www.toriitravel.com") String appUrl
 ) {
 
     /** Default values, handy for building the config in tests. */
     public static EmailProperties defaults() {
-        return new EmailProperties(false, "https://api.resend.com", "", "onboarding@resend.dev", "Torii");
+        return new EmailProperties(false, "https://api.resend.com", "", "onboarding@resend.dev", "Torii",
+                "https://www.toriitravel.com");
     }
 
     /** Copy with a different baseUrl (used in tests to point at the mock server). */
     public EmailProperties withBaseUrl(String newBaseUrl) {
-        return new EmailProperties(enabled, newBaseUrl, apiKey, fromAddress, fromName);
+        return new EmailProperties(enabled, newBaseUrl, apiKey, fromAddress, fromName, appUrl);
     }
 
     /** Sender as "Name &lt;address&gt;", the format Resend expects. */

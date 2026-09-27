@@ -9,7 +9,9 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
@@ -31,7 +33,8 @@ class ResendEmailServiceTest {
     // enabled/baseUrl don't matter here (MockRestServiceServer intercepts), but the
     // apiKey (goes in the header) and the sender (goes in the body) do.
     private static final EmailProperties PROPS =
-            new EmailProperties(true, "https://api.resend.com", "re_test_key", "onboarding@resend.dev", "Torii");
+            new EmailProperties(true, "https://api.resend.com", "re_test_key", "onboarding@resend.dev", "Torii",
+                    "https://www.toriitravel.com");
 
     @BeforeEach
     void setUp() {
@@ -48,7 +51,9 @@ class ResendEmailServiceTest {
                 .andExpect(jsonPath("$.from").value("Torii <onboarding@resend.dev>"))
                 .andExpect(jsonPath("$.to[0]").value("marcos@example.com"))
                 .andExpect(jsonPath("$.subject", containsString("Marcos")))
-                .andExpect(jsonPath("$.html", containsString("Marcos")))
+                .andExpect(jsonPath("$.html", allOf(containsString("Marcos"),
+                        containsString("href=\"https://www.toriitravel.com\""))))
+                .andExpect(jsonPath("$.text", containsString("https://www.toriitravel.com")))
                 .andRespond(withSuccess("{\"id\":\"abc-123\"}", APPLICATION_JSON));
 
         service.sendWelcome("marcos@example.com", "Marcos");
@@ -63,5 +68,18 @@ class ResendEmailServiceTest {
 
         assertThatThrownBy(() -> service.sendWelcome("marcos@example.com", "Marcos"))
                 .isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    void elNombreSeEscapaEnElHtmlYNoRompeElAsunto() {
+        server.expect(requestTo("https://api.resend.com/emails"))
+                .andExpect(jsonPath("$.html", allOf(
+                        containsString("&lt;script&gt;"), not(containsString("<script>")))))
+                .andExpect(jsonPath("$.subject", not(containsString("\n"))))
+                .andRespond(withSuccess("{\"id\":\"abc-123\"}", APPLICATION_JSON));
+
+        service.sendWelcome("marcos@example.com", "<script>alert(1)</script>\nBcc: x@y.z");
+
+        server.verify();
     }
 }
