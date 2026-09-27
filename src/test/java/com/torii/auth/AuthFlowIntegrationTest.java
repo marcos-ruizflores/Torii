@@ -54,7 +54,7 @@ class AuthFlowIntegrationTest {
         String authJson = mvc.perform(post("/api/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"name":"Marcos","email":"marcos@test.com","password":"superclave123"}
+                                {"name":"Marcos","email":"flujo@test.com","password":"superclave123"}
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.user.plan").value("FREE"))
@@ -69,7 +69,8 @@ class AuthFlowIntegrationTest {
                 .andExpect(status().isOk());
 
         // The search gets recorded in a separate logical transaction, so force it
-        // to be visible inside the test.
+        // to be visible inside the test. This commits the account too and the in-memory
+        // H2 is shared across test classes, hence an email no other test uses.
         TestTransaction.flagForCommit();
 
         // 3. The search shows up in "my searches".
@@ -82,7 +83,7 @@ class AuthFlowIntegrationTest {
         // 4. The token's profile endpoint answers.
         mvc.perform(get("/api/me").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value("marcos@test.com"));
+                .andExpect(jsonPath("$.email").value("flujo@test.com"));
     }
 
     @Test
