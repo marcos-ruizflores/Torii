@@ -9,6 +9,7 @@ import com.torii.user.UserAccount;
 import com.torii.user.UserRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -36,12 +37,15 @@ public class MeController {
     private final UserRepository users;
     private final SearchHistoryService searchHistory;
     private final PlanQuotaService quota;
+    private final boolean planChangesEnabled;
 
     public MeController(UserRepository users, SearchHistoryService searchHistory,
-                        PlanQuotaService quota) {
+                        PlanQuotaService quota,
+                        @Value("${torii.plans.self-service-changes:false}") boolean planChangesEnabled) {
         this.users = users;
         this.searchHistory = searchHistory;
         this.quota = quota;
+        this.planChangesEnabled = planChangesEnabled;
     }
 
     /** Profile of the token owner, used to restore the session on page reload. */
@@ -70,14 +74,20 @@ public class MeController {
     public record ChangePlanRequest(@NotBlank String plan) {}
 
     /**
-     * Changes the account plan. NO payments yet, it's here so each plan's quota can be
-     * tested from the /planes page. Once there's a payment gateway this becomes the
-     * payment confirmation step.
+     * Changes the account plan. There are NO payments yet, so it's switched off by
+     * default ({@code torii.plans.self-service-changes=false}) and every account stays
+     * on FREE. Once there's a payment gateway this becomes the payment confirmation
+     * step.
      */
     @PostMapping("/plan")
     @Transactional
     public UserDto changePlan(@AuthenticationPrincipal Jwt jwt,
                               @Valid @RequestBody ChangePlanRequest request) {
+        if (!planChangesEnabled) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "El cambio de plan estará disponible cuando activemos los pagos. "
+                            + "De momento todas las cuentas usan el plan Gratis.");
+        }
         Plan newPlan = Arrays.stream(Plan.values())
                 .filter(p -> p.name().equalsIgnoreCase(request.plan().strip()))
                 .findFirst()

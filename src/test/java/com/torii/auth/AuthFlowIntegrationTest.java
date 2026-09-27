@@ -79,7 +79,7 @@ class AuthFlowIntegrationTest {
     }
 
     @Test
-    void cambiarDePlanActualizaLaCuota() throws Exception {
+    void cambiarDePlanEstaDesactivadoHastaQueHayaPagos() throws Exception {
         String authJson = mvc.perform(post("/api/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -89,29 +89,22 @@ class AuthFlowIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         String token = JsonPath.read(authJson, "$.token");
 
-        // Starts on FREE (limit 30)...
+        // New accounts start on FREE (limit 30)...
         mvc.perform(get("/api/me/usage").header("Authorization", "Bearer " + token))
                 .andExpect(jsonPath("$.plan").value("FREE"))
                 .andExpect(jsonPath("$.limit").value(30));
 
-        // ...upgrades to PRO...
+        // ...trying to upgrade is refused while there are no payments...
         mvc.perform(post("/api/me/plan")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"plan\":\"PRO\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.plan").value("PRO"));
+                .andExpect(status().isForbidden());
 
-        // ...and the quota goes up to 500.
+        // ...and the account is still on FREE.
         mvc.perform(get("/api/me/usage").header("Authorization", "Bearer " + token))
-                .andExpect(jsonPath("$.limit").value(500));
-
-        // A made-up plan gets a 400.
-        mvc.perform(post("/api/me/plan")
-                        .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"plan\":\"MEGA\"}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(jsonPath("$.plan").value("FREE"))
+                .andExpect(jsonPath("$.limit").value(30));
     }
 
     @Test

@@ -13,8 +13,12 @@ import type { User } from '../api/types'
  *
  * Plans map to what the backend already has: search precision
  * (FAST/BALANCED/EXHAUSTIVE) and the monthly lookup quota enforced per account.
- * There's no payment step yet, picking a plan just switches it.
+ * There's no payment step yet, so plan changes are switched off: the cards stay
+ * visible but paid plans can't be picked and every account stays on FREE.
  */
+
+/** Flip to true (together with torii.plans.self-service-changes) once payments exist. */
+const PLAN_CHANGES_ENABLED = false
 
 interface Plan {
   key: User['plan'] // the name the backend expects (FREE/PRO/BUSINESS)
@@ -186,6 +190,11 @@ export function Pricing() {
                   <Button size="lg" color="secondary" isDisabled>
                     Tu plan actual
                   </Button>
+                ) : !PLAN_CHANGES_ENABLED && (user || plan.key !== 'FREE') ? (
+                  // Without payments only signing up (to FREE) is allowed.
+                  <Button size="lg" color="secondary" isDisabled>
+                    Próximamente
+                  </Button>
                 ) : (
                   <Button
                     size="lg"
@@ -204,8 +213,9 @@ export function Pricing() {
         {error && <p className="text-center text-sm text-error-primary">{error}</p>}
 
         <p className="text-center text-sm text-quaternary">
-          Los pagos aún no están activos: el cambio de plan es instantáneo y gratuito mientras
-          Torii esté en desarrollo.
+          {PLAN_CHANGES_ENABLED
+            ? 'Los pagos aún no están activos: el cambio de plan es instantáneo y gratuito mientras Torii esté en desarrollo.'
+            : 'Los planes de pago llegarán pronto. De momento todas las cuentas usan el plan Gratis, con 30 consultas al mes.'}
         </p>
       </main>
     </div>
