@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -49,6 +51,9 @@ import java.util.regex.Pattern;
 public class FlightPowersFlightProvider implements FlightProvider {
 
     private static final Logger log = LoggerFactory.getLogger(FlightPowersFlightProvider.class);
+
+    /** Unrecognized verdict values already logged, so each shows up once. */
+    private static final Set<String> UNKNOWN_LEVELS = ConcurrentHashMap.newKeySet();
 
     private static final String ROUND_TRIP_PATH = "/api/google_flights/roundtrip/v1";
     private static final String FALLBACK_BOOKING_URL = "https://www.google.com/travel/flights";
@@ -109,6 +114,10 @@ public class FlightPowersFlightProvider implements FlightProvider {
                         origin, destination, departDate, returnDate);
             }
 
+            if (!results.isEmpty() && results.stream().allMatch(r -> r == null || r.priceLevel() == null)) {
+                log.info("FlightPowers: sin veredicto de precio para {}->{} {}/{}",
+                        origin, destination, departDate, returnDate);
+            }
             return mapToOffers(results, departDate, returnDate);
 
         } catch (HttpClientErrorException.TooManyRequests e) {
@@ -150,12 +159,32 @@ public class FlightPowersFlightProvider implements FlightProvider {
     }
 
     private static PriceInsight toPriceInsight(FlightPowersRoundTripOffer r) {
-        if (r.priceLevel() == null || r.priceLevel().isBlank()) {
+        String level = normalizeLevel(r.priceLevel());
+        if (level == null) {
             return null;
         }
-        return new PriceInsight(r.priceLevel().strip().toLowerCase(Locale.ROOT),
+        return new PriceInsight(level,
                 r.priceInsightsLow() != null ? BigDecimal.valueOf(r.priceInsightsLow()) : null,
                 r.priceInsightsHigh() != null ? BigDecimal.valueOf(r.priceInsightsHigh()) : null);
+    }
+
+    /**
+     * Maps Google's wording to low / typical / high. The exact values aren't
+     * documented, so it accepts the obvious variants and logs anything else once,
+     * to find out what the API really sends.
+     */
+    static String normalizeLevel(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String v = raw.strip().toLowerCase(Locale.ROOT);
+        if (v.contains("low") || v.contains("cheap") || v.contains("below")) return "low";
+        if (v.contains("high") || v.contains("expensive") || v.contains("above")) return "high";
+        if (v.contains("typical") || v.contains("normal") || v.contains("average")) return "typical";
+        if (UNKNOWN_LEVELS.add(v)) {
+            log.warn("FlightPowers: veredicto de precio desconocido \"{}\", se ignora", raw);
+        }
+        return null;
     }
 
     /**

@@ -170,4 +170,14 @@ class FlightPowersFlightProviderTest {
         assertThat(FlightPowersFlightProvider.parseTime("mañana")).isNull();
         assertThat(FlightPowersFlightProvider.parseTime(null)).isNull();
     }
+
+    @Test
+    void normalizaLasVariantesDelVeredicto() {
+        assertThat(FlightPowersFlightProvider.normalizeLevel("Low")).isEqualTo("low");
+        assertThat(FlightPowersFlightProvider.normalizeLevel(" typical ")).isEqualTo("typical");
+        assertThat(FlightPowersFlightProvider.normalizeLevel("HIGH")).isEqualTo("high");
+        assertThat(FlightPowersFlightProvider.normalizeLevel("cheaper than usual")).isEqualTo("low");
+        assertThat(FlightPowersFlightProvider.normalizeLevel("")).isNull();
+        assertThat(FlightPowersFlightProvider.normalizeLevel("unknown")).isNull();
+    }
 }
