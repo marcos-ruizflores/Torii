@@ -114,8 +114,10 @@ public class FlightPowersFlightProvider implements FlightProvider {
                         origin, destination, departDate, returnDate);
             }
 
-            if (!results.isEmpty() && results.stream().allMatch(r -> r == null || r.priceLevel() == null)) {
-                log.info("FlightPowers: sin veredicto de precio para {}->{} {}/{}",
+            // The round-trip endpoint sends the verdict fields empty ("" and null); only
+            // one-way searches get them filled. Kept at debug so it doesn't flood the log.
+            if (!results.isEmpty() && results.stream().allMatch(r -> r == null || normalizeLevel(r.priceLevel()) == null)) {
+                log.debug("FlightPowers: sin veredicto de precio para {}->{} {}/{}",
                         origin, destination, departDate, returnDate);
             }
             return mapToOffers(results, departDate, returnDate);

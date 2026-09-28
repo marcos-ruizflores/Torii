@@ -304,11 +304,11 @@ answer:
   no keys configured. Its offers are excluded from the price history so they never
   pollute real data.
 
-FlightPowers goes first because it's the cheapest source per call. It's also the only
-one that returns Google's price insight (`low` / `typical` / `high` plus the usual price
-range for the route), which is what the "Veredicto" column in the results shows. When
-an offer comes from another source it has no verdict, and the UI says so instead of
-guessing.
+FlightPowers goes first because it's the cheapest source per call. Its responses have
+fields for Google's price insight (`low` / `typical` / `high` plus the usual price
+range), which feed the "Veredicto" column, but in practice only one-way searches fill
+them: round-trip responses come back with them empty. When there's no verdict the UI
+says so instead of guessing.
 
 ### Quotas checked up front
 
