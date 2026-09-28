@@ -160,7 +160,8 @@ class AuthServiceTest {
     @Test
     void unEnlaceCaducadoNoSirveYElNuevoAnulaAlAnterior() {
         UserAccount user = users.findByEmail(authService.signup(SIGNUP).user().email()).orElseThrow();
-        Instant t0 = Instant.parse("2026-09-28T10:00:00Z");
+        // Far from the real clock, so the link sign up just sent doesn't trip the one-a-minute limit.
+        Instant t0 = Instant.parse("2030-01-01T10:00:00Z");
         AuthTokenService at = new AuthTokenService(tokenRepository, Clock.fixed(t0, ZoneOffset.UTC));
         String first = at.issue(user, AuthTokenPurpose.PASSWORD_RESET).orElseThrow();
 

@@ -307,8 +307,14 @@ answer:
 FlightPowers goes first because it's the cheapest source per call. Its responses have
 fields for Google's price insight (`low` / `typical` / `high` plus the usual price
 range), which feed the "Veredicto" column, but in practice only one-way searches fill
-them: round-trip responses come back with them empty. When there's no verdict the UI
-says so instead of guessing.
+them: round-trip responses come back with them empty. So Torii works out its own
+(`PriceVerdictService`): it compares each offer with the best daily prices it has
+stored for the route over the last 90 days (at least 5 days, today excluded), or, while
+a route has less history than that, with the cheapest price of each date scanned in
+the same search (at least 6). The usual range is the 25th to 75th percentile; at or
+below it is low, at or above it is high. The UI always says which of the two the
+verdict is based on, and with less data than that it shows no verdict instead of
+guessing.
 
 ### Quotas checked up front
 

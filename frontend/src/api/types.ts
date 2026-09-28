@@ -43,14 +43,20 @@ export interface FlightOffer {
   returnDepartureTime: string | null // return leg departure time (null with SerpApi)
   stopovers: string[] // IATA codes of the stopover airports
   bookingUrl: string
-  priceInsight: PriceInsight | null // Google's verdict, only some sources send it
+  priceInsight: PriceInsight | null // null when there's nothing to compare against yet
 }
 
-/** Google's verdict on a price compared to other dates for the same route. */
+/**
+ * Verdict on a price. `source` says what it's based on: Google (sent by the data
+ * source), Torii's stored history for the route, or the other dates scanned in this
+ * search. `samples` is how many days or dates that is.
+ */
 export interface PriceInsight {
   level: 'low' | 'typical' | 'high' | string
   typicalLow: number | null
   typicalHigh: number | null
+  source: 'google' | 'history' | 'scan' | string
+  samples: number | null
 }
 
 /** Shape of a 400 error (ProblemDetail, RFC 7807). */

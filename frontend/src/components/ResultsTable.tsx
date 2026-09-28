@@ -56,9 +56,17 @@ const VERDICTS = {
   high: { label: 'Precio alto', dot: 'bg-fg-warning-secondary', text: 'text-warning-primary' },
 } as const
 
+/** Where the verdict comes from, in a few words: it has to fit under the range. */
+function verdictBasis(insight: PriceInsight): string | null {
+  if (insight.source === 'history') return `Histórico Torii · ${insight.samples} días`
+  if (insight.source === 'scan') return `Entre ${insight.samples} fechas escaneadas`
+  if (insight.source === 'google') return 'Según Google'
+  return null
+}
+
 /**
- * Google's verdict for the price, always as words plus a mark, never colour alone,
- * with the usual range for the route when the source sends it.
+ * Verdict for the price, always as words plus a mark, never colour alone, with the
+ * usual range and what it's based on (Torii's history, the scanned dates or Google).
  */
 function Verdict({ insight, currency }: { insight: PriceInsight | null; currency: string }) {
   const verdict = insight ? VERDICTS[insight.level as keyof typeof VERDICTS] : undefined
@@ -76,6 +84,9 @@ function Verdict({ insight, currency }: { insight: PriceInsight | null; currency
         {verdict.label}
       </span>
       {range && <span className="text-xs whitespace-nowrap text-tertiary">{range}</span>}
+      {verdictBasis(insight) && (
+        <span className="text-xs whitespace-nowrap text-quaternary">{verdictBasis(insight)}</span>
+      )}
     </span>
   )
 }
@@ -271,8 +282,8 @@ export function ResultsBoard({ state, offers = [], origin, destination, errorMes
           <p className="font-semibold text-primary">Aún no hay salidas en el panel.</p>
           <p className="mt-1 max-w-prose text-sm text-tertiary">
             Elige una ventana de fechas y cuántas noches quieres estar. Torii probará cada combinación de ida y
-            vuelta y colocará aquí las más baratas. Cuando la fuente lo permita, verás también si el precio es bajo,
-            habitual o alto para esa ruta.
+            vuelta y colocará aquí las más baratas. Cuando tenga con qué comparar, te dirá también si el precio es
+            bajo, habitual o alto según lo que Torii ha visto en esa ruta.
           </p>
         </div>
       )}

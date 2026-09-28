@@ -2,6 +2,7 @@ package com.torii.search;
 
 import com.torii.algorithm.SlidingWindowEngine;
 import com.torii.history.PriceHistoryService;
+import com.torii.history.PriceVerdictService;
 import com.torii.history.SearchHistoryService;
 import com.torii.model.FlightOffer;
 import com.torii.model.SearchPrecision;
@@ -29,10 +30,13 @@ public class SearchService {
     private final PriceHistoryService priceHistory;
     private final SearchHistoryService searchHistory;
     private final PlanQuotaService quota;
+    private final PriceVerdictService verdicts;
 
     public SearchService(SlidingWindowEngine engine, PriceHistoryService priceHistory,
-                         SearchHistoryService searchHistory, PlanQuotaService quota) {
+                         SearchHistoryService searchHistory, PlanQuotaService quota,
+                         PriceVerdictService verdicts) {
         this.engine = engine;
+        this.verdicts = verdicts;
         this.priceHistory = priceHistory;
         this.searchHistory = searchHistory;
         this.quota = quota;
@@ -60,7 +64,16 @@ public class SearchService {
             quota.consume(userId, engine.countQueries(request));
         }
 
-        List<FlightOffer> offers = engine.findBestOffers(request);
+        SlidingWindowEngine.SearchResult result = engine.run(request);
+        List<FlightOffer> offers = result.offers();
+
+        // Torii's own verdict for offers the source didn't judge. Before recording
+        // today's observation, so a search is never compared with itself.
+        try {
+            offers = verdicts.addVerdicts(request.origin(), request.destination(), offers, result.cheapestPerDate());
+        } catch (RuntimeException e) {
+            log.warn("No se pudo calcular el veredicto de precio: {}", e.getMessage());
+        }
 
         // Recording is best effort: if the DB is down the search should still answer.
         try {

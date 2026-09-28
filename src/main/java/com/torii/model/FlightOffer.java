@@ -25,8 +25,9 @@ import java.util.List;
  *       and price, different times or stops). They can be missing ({@code null} or an
  *       empty list) when the source doesn't provide them, e.g. SerpApi doesn't give
  *       the return time without a second call.</li>
- *   <li>{@code priceInsight} is Google's low / typical / high verdict for the price.
- *       Only some sources send it, so it's usually {@code null}.</li>
+ *   <li>{@code priceInsight} is the low / typical / high verdict for the price, from
+ *       the source or computed by Torii (see {@link PriceInsight#source()}). It can
+ *       be {@code null} when there's nothing to compare against yet.</li>
  * </ul>
  */
 public record FlightOffer(
@@ -68,6 +69,12 @@ public record FlightOffer(
                        List<String> stopovers, String bookingUrl) {
         this(airline, price, currency, stops, departDate, returnDate,
                 departureTime, null, stopovers, bookingUrl);
+    }
+
+    /** Same offer with a verdict attached. */
+    public FlightOffer withPriceInsight(PriceInsight insight) {
+        return new FlightOffer(airline, price, currency, stops, departDate, returnDate,
+                departureTime, returnDepartureTime, stopovers, bookingUrl, insight);
     }
 
     /** Length of stay in days (exact difference between return and outbound). */

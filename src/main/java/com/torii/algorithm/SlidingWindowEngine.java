@@ -73,15 +73,32 @@ public class SlidingWindowEngine {
      * @return up to {@code request.topN()} offers, cheapest first
      */
     public List<FlightOffer> findBestOffers(SearchRequest request) {
+        return run(request).offers();
+    }
+
+    /**
+     * Result of a search: the best offers, plus the cheapest offer of each date pair
+     * scanned, which Torii's own price verdict uses as a reference when the route
+     * has no history yet.
+     */
+    public record SearchResult(List<FlightOffer> offers, List<FlightOffer> cheapestPerDate) {}
+
+    /** Runs the search, see {@link #findBestOffers} and {@link SearchResult}. */
+    public SearchResult run(SearchRequest request) {
         List<DatePair> pairs = buildDatePairs(request);
-        List<FlightOffer> allCandidates = queryAllInParallel(request, pairs);
+        List<List<FlightOffer>> perPair = queryAllInParallel(request, pairs);
+        List<FlightOffer> allCandidates = perPair.stream().flatMap(List::stream).toList();
+        List<FlightOffer> cheapestPerDate = perPair.stream()
+                .map(offers -> offers.stream().min(BY_PRICE_THEN_STABLE).orElse(null))
+                .filter(java.util.Objects::nonNull)
+                .toList();
 
         long rangeDays = ChronoUnit.DAYS.between(request.rangeStart(), request.rangeEnd());
         log.info("Búsqueda {}->{} [{}]: {} días de rango, {} consultas (concurrencia {}), {} ofertas candidatas",
                 request.origin(), request.destination(), request.precision(),
                 rangeDays, pairs.size(), maxConcurrency, allCandidates.size());
 
-        return allCandidates.stream()
+        List<FlightOffer> best = allCandidates.stream()
                 // Budget filter, if any. It's applied here on top of the cached data
                 // so the same cache entries work for any budget.
                 .filter(offer -> request.maxPrice() == null
@@ -89,6 +106,7 @@ public class SlidingWindowEngine {
                 .sorted(BY_PRICE_THEN_STABLE)
                 .limit(request.topN())
                 .toList();
+        return new SearchResult(best, cheapestPerDate);
     }
 
     /**
@@ -145,11 +163,11 @@ public class SlidingWindowEngine {
 
     /**
      * Queries every date pair in parallel on virtual threads, with concurrency
-     * capped by the semaphore, and collects all the offers.
+     * capped by the semaphore, and collects the offers of each pair.
      */
-    private List<FlightOffer> queryAllInParallel(SearchRequest request, List<DatePair> pairs) {
+    private List<List<FlightOffer>> queryAllInParallel(SearchRequest request, List<DatePair> pairs) {
         Semaphore limit = new Semaphore(maxConcurrency);
-        List<FlightOffer> all = new ArrayList<>();
+        List<List<FlightOffer>> all = new ArrayList<>();
 
         // try-with-resources: close() waits for all submitted tasks to finish.
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
@@ -170,7 +188,7 @@ public class SlidingWindowEngine {
 
             for (Future<List<FlightOffer>> future : futures) {
                 try {
-                    all.addAll(future.get());
+                    all.add(future.get());
                 } catch (ExecutionException e) {
                     // One date failed (e.g. no provider available). Don't kill the
                     // whole search over it, just carry on with the rest.

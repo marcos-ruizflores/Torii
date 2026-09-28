@@ -73,7 +73,7 @@ public class PriceHistoryService {
     }
 
     /** Mock offers carry the example.com URL, they're not real prices. */
-    private static boolean isMockOffer(FlightOffer offer) {
+    static boolean isMockOffer(FlightOffer offer) {
         return offer.bookingUrl() != null && offer.bookingUrl().contains("example.com");
     }
 
