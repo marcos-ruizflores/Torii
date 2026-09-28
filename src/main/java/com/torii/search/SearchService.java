@@ -31,12 +31,14 @@ public class SearchService {
     private final SearchHistoryService searchHistory;
     private final PlanQuotaService quota;
     private final PriceVerdictService verdicts;
+    private final BestDatesRefiner refiner;
 
     public SearchService(SlidingWindowEngine engine, PriceHistoryService priceHistory,
                          SearchHistoryService searchHistory, PlanQuotaService quota,
-                         PriceVerdictService verdicts) {
+                         PriceVerdictService verdicts, BestDatesRefiner refiner) {
         this.engine = engine;
         this.verdicts = verdicts;
+        this.refiner = refiner;
         this.priceHistory = priceHistory;
         this.searchHistory = searchHistory;
         this.quota = quota;
@@ -65,6 +67,13 @@ public class SearchService {
         }
 
         SlidingWindowEngine.SearchResult result = engine.run(request);
+        // Second look at the cheapest dates with a source that sees more fares (see
+        // BestDatesRefiner). It's our cost, not the user's: it doesn't touch the quota.
+        try {
+            result = refiner.refine(request, result);
+        } catch (RuntimeException e) {
+            log.warn("No se pudo refinar la búsqueda: {}", e.getMessage());
+        }
         List<FlightOffer> offers = result.offers();
 
         // Torii's own verdict for offers the source didn't judge. Before recording
