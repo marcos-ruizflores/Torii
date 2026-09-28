@@ -1,57 +1,100 @@
-// Small airport lookup: IATA code -> coordinates and name.
+import { useQuery } from '@tanstack/react-query'
+
+// Airport lookup: IATA code -> city, name, country and coordinates.
 //
 // The backend doesn't return coordinates (FlightOffer doesn't have them), so the map
-// resolves them here from the IATA code the user typed. Eventually this should be
-// replaced by a proper airport database or a backend endpoint.
+// and the airport field resolve them here. The data is ~3,200 large and medium
+// airports with scheduled service, generated from OurAirports by
+// scripts/build-airports.mjs (`npm run airports`). It's ~90 kB gzipped, so it's
+// loaded on demand: when the map shows up or the user focuses an airport field.
 //
 // Coordinates are [longitude, latitude], the order GeoJSON / react-simple-maps use.
 
 export interface Airport {
+  iata: string
+  /** City in Spanish when we have the name, otherwise as OurAirports spells it. */
+  city: string
+  /** Official airport name (in English, as published). */
   name: string
+  /** ISO 3166 country code. */
+  country: string
   coordinates: [number, number]
+  /** Large hub: ranks first in suggestions. */
+  large: boolean
 }
 
-export const AIRPORTS: Record<string, Airport> = {
-  BCN: { name: 'Barcelona', coordinates: [2.0785, 41.2974] },
-  MAD: { name: 'Madrid', coordinates: [-3.5668, 40.4983] },
-  LIS: { name: 'Lisboa', coordinates: [-9.1359, 38.7742] },
-  LHR: { name: 'Londres', coordinates: [-0.4543, 51.47] },
-  CDG: { name: 'París', coordinates: [2.5479, 49.0097] },
-  AMS: { name: 'Ámsterdam', coordinates: [4.7639, 52.3105] },
-  FRA: { name: 'Fráncfort', coordinates: [8.5622, 50.0379] },
-  MUC: { name: 'Múnich', coordinates: [11.7861, 48.3538] },
-  BER: { name: 'Berlín', coordinates: [13.5033, 52.3667] },
-  FCO: { name: 'Roma', coordinates: [12.2389, 41.8003] },
-  ZRH: { name: 'Zúrich', coordinates: [8.5492, 47.4647] },
-  VIE: { name: 'Viena', coordinates: [16.5697, 48.1103] },
-  CPH: { name: 'Copenhague', coordinates: [12.6508, 55.6181] },
-  DUB: { name: 'Dublín', coordinates: [-6.2701, 53.4264] },
-  IST: { name: 'Estambul', coordinates: [28.7279, 41.2753] },
-  SVO: { name: 'Moscú', coordinates: [37.4146, 55.9726] },
-  JFK: { name: 'Nueva York', coordinates: [-73.7781, 40.6413] },
-  MIA: { name: 'Miami', coordinates: [-80.2906, 25.7959] },
-  ORD: { name: 'Chicago', coordinates: [-87.9048, 41.9742] },
-  LAX: { name: 'Los Ángeles', coordinates: [-118.4085, 33.9416] },
-  SFO: { name: 'San Francisco', coordinates: [-122.379, 37.6213] },
-  YYZ: { name: 'Toronto', coordinates: [-79.6306, 43.6777] },
-  MEX: { name: 'Ciudad de México', coordinates: [-99.0721, 19.4361] },
-  GRU: { name: 'São Paulo', coordinates: [-46.4731, -23.4356] },
-  EZE: { name: 'Buenos Aires', coordinates: [-58.5358, -34.8222] },
-  NRT: { name: 'Tokio', coordinates: [140.386, 35.7719] },
-  HND: { name: 'Tokio Haneda', coordinates: [139.7798, 35.5494] },
-  ICN: { name: 'Seúl', coordinates: [126.4505, 37.4602] },
-  PEK: { name: 'Pekín', coordinates: [116.5846, 40.0799] },
-  HKG: { name: 'Hong Kong', coordinates: [113.9145, 22.308] },
-  SIN: { name: 'Singapur', coordinates: [103.9915, 1.3592] },
-  BKK: { name: 'Bangkok', coordinates: [100.7501, 13.69] },
-  DEL: { name: 'Delhi', coordinates: [77.1003, 28.5562] },
-  DXB: { name: 'Dubái', coordinates: [55.3644, 25.2532] },
-  CAI: { name: 'El Cairo', coordinates: [31.4056, 30.1219] },
-  JNB: { name: 'Johannesburgo', coordinates: [28.246, -26.1392] },
-  SYD: { name: 'Sídney', coordinates: [151.1772, -33.9399] },
+type Row = [string, string, string, string, number, number, number]
+
+export type AirportIndex = Map<string, Airport>
+
+let index: Promise<AirportIndex> | null = null
+
+/** Loads the airport list once; later calls reuse the same promise. */
+export function loadAirports(): Promise<AirportIndex> {
+  index ??= import('../data/airports.json').then(({ default: rows }) => {
+    const map: AirportIndex = new Map()
+    for (const [iata, city, name, country, lon, lat, large] of rows as Row[]) {
+      map.set(iata, { iata, city, name, country, coordinates: [lon, lat], large: large === 1 })
+    }
+    return map
+  })
+  return index
 }
 
-/** Returns the airport if we know it, otherwise undefined. */
-export function lookupAirport(iata: string): Airport | undefined {
-  return AIRPORTS[iata.toUpperCase()]
+/** The airport list as a query, so components re-render when it arrives. */
+export function useAirports(enabled = true) {
+  return useQuery({ queryKey: ['airports'], queryFn: loadAirports, staleTime: Infinity, gcTime: Infinity, enabled })
+}
+
+export function lookupAirport(airports: AirportIndex | undefined, iata: string): Airport | undefined {
+  return airports?.get(iata.toUpperCase())
+}
+
+const countries = typeof Intl.DisplayNames === 'function' ? new Intl.DisplayNames(['es'], { type: 'region' }) : null
+
+/** "España", "Japón"... falls back to the ISO code. */
+export function countryName(code: string): string {
+  try {
+    return countries?.of(code) ?? code
+  } catch {
+    return code
+  }
+}
+
+/** Lowercase without accents, so "malaga" finds "Málaga". */
+function fold(text: string): string {
+  return text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+}
+
+/**
+ * Suggestions for what the user typed: exact code first, then cities and airport
+ * names that start with the text, then ones that contain it. Ties go to big hubs,
+ * to the spelling the user actually typed ("mála" -> Málaga before Malabo) and to
+ * Spanish airports, where most searches start.
+ */
+export function searchAirports(airports: AirportIndex, query: string, limit = 8): Airport[] {
+  const raw = query.trim().toLowerCase()
+  const q = fold(raw)
+  if (!q) return []
+  const scored: { airport: Airport; score: number }[] = []
+  for (const airport of airports.values()) {
+    const code = airport.iata.toLowerCase()
+    const city = fold(airport.city)
+    const name = fold(airport.name)
+    let score = -1
+    if (code === q) score = 100
+    else if (code.startsWith(q)) score = 60
+    else if (city.startsWith(q)) score = 50
+    else if (name.startsWith(q) || city.includes(` ${q}`) || name.includes(` ${q}`)) score = 30
+    else if (q.length >= 3 && (city.includes(q) || name.includes(q))) score = 10
+    if (score < 0) continue
+    if (airport.large) score += 5
+    if (airport.city.toLowerCase().startsWith(raw)) score += 3
+    if (airport.country === 'ES') score += 2
+    scored.push({ airport, score })
+  }
+  return scored
+    .sort((a, b) => b.score - a.score || a.airport.city.localeCompare(b.airport.city, 'es'))
+    .slice(0, limit)
+    .map((s) => s.airport)
 }

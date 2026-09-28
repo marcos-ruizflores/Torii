@@ -4,11 +4,11 @@ import type { DateRange } from 'react-aria-components'
 import { AlertTriangle, SearchLg } from '@untitledui/icons'
 import { DateRangePicker } from '@/components/application/date-picker/date-range-picker'
 import { Button } from '@/components/base/buttons/button'
-import { Input } from '@/components/base/input/input'
 import { InputNumber } from '@/components/base/input/input-number'
 import { Select } from '@/components/base/select/select'
 import { cx } from '@/utils/cx'
 import type { DayOfWeek, SearchPrecision, SearchRequest, User } from '../api/types'
+import { AirportField } from './AirportField'
 import { FlapText } from './board/FlapText'
 import { BOARD_COLS_LG } from './board/grid'
 
@@ -159,7 +159,8 @@ export function SearchForm({ onSearch, loading, plan, remaining }: Props) {
   const load = estimatedQueries > 100 ? 'high' : estimatedQueries > 30 ? 'medium' : 'low'
   const overQuota = remaining != null && estimatedQueries > remaining
 
-  const canSubmit = origin.length === 3 && destination.length === 3 && range !== null
+  const isCode = (v: string) => /^[A-Z]{3}$/.test(v)
+  const canSubmit = isCode(origin) && isCode(destination) && range !== null
 
   function handleSubmit() {
     if (!range?.start || !range?.end) return
@@ -203,25 +204,13 @@ export function SearchForm({ onSearch, loading, plan, remaining }: Props) {
 
       {/* From lg the fields sit on the results board's columns, so the two panels line up. */}
       <div className={cx('mt-5 grid grid-cols-2 gap-x-4 gap-y-5 px-5', BOARD_COLS_LG)}>
-        <Input
-          label="Origen"
-          placeholder="BCN"
-          aria-label="Aeropuerto de origen (código IATA)"
-          hint="Código IATA"
-          value={origin}
-          maxLength={3}
-          className="lg:col-span-1"
-          onChange={(value) => setOrigin(value.toUpperCase())}
-        />
-        <Input
+        <AirportField label="Origen" placeholder="BCN" value={origin} onChange={setOrigin} className="lg:col-span-1" />
+        <AirportField
           label="Destino"
           placeholder="NRT"
-          aria-label="Aeropuerto de destino (código IATA)"
-          hint="Código IATA"
           value={destination}
-          maxLength={3}
+          onChange={setDestination}
           className="lg:col-span-1"
-          onChange={(value) => setDestination(value.toUpperCase())}
         />
 
         <div className="col-span-2 flex flex-col gap-1.5 lg:col-span-2">

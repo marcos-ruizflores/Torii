@@ -1,7 +1,7 @@
 import { geoEqualEarth, geoInterpolate } from 'd3-geo'
 import { ComposableMap, Geographies, Geography, Line, Marker, type ProjectionFunction } from 'react-simple-maps'
 import { token } from '@/utils/token'
-import { lookupAirport } from '../api/airports'
+import { lookupAirport, useAirports } from '../api/airports'
 import { FlapText } from './board/FlapText'
 
 interface Props {
@@ -9,8 +9,9 @@ interface Props {
   destination: string
 }
 
-// World TopoJSON from a CDN (the usual react-simple-maps setup).
-const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
+// World TopoJSON (world-atlas countries-110m), served from our own public/ folder
+// so the map doesn't depend on a third-party CDN being up.
+const GEO_URL = '/geo/countries-110m.json'
 
 /** Taller than wide on purpose: it sits next to the price chart and matches its height. */
 const WIDTH = 600
@@ -61,12 +62,22 @@ function PanelHeader({ origin, destination }: Props) {
 /**
  * Map of the current search's route, framed on the two airports.
  *
- * Coordinates come from the local airport lookup. If a code isn't in there it shows
- * a notice instead of breaking.
+ * Coordinates come from the airport list (loaded on demand). If a code isn't in
+ * there it shows a notice instead of breaking.
  */
 export function RouteMap({ origin, destination }: Props) {
-  const from = lookupAirport(origin)
-  const to = lookupAirport(destination)
+  const airports = useAirports()
+  const from = lookupAirport(airports.data, origin)
+  const to = lookupAirport(airports.data, destination)
+
+  // Same size as the finished panel while the list loads, so nothing jumps.
+  if (airports.isPending) {
+    return (
+      <section className="flex min-h-80 flex-col overflow-hidden rounded-xl bg-secondary ring-1 ring-secondary ring-inset">
+        <PanelHeader origin={origin} destination={destination} />
+      </section>
+    )
+  }
 
   if (!from || !to) {
     const desconocido = !from ? origin : destination
@@ -76,8 +87,8 @@ export function RouteMap({ origin, destination }: Props) {
         <div className="px-5 py-5 text-sm">
           <p className="font-semibold text-primary">Mapa no disponible</p>
           <p className="mt-1 text-tertiary">
-            No tengo las coordenadas del aeropuerto «{desconocido}». El mapa solo conoce una lista de aeropuertos
-            principales por ahora.
+            No tengo las coordenadas del aeropuerto «{desconocido}». El mapa conoce los aeropuertos con vuelos
+            regulares; la búsqueda funciona igual.
           </p>
         </div>
       </section>
@@ -92,7 +103,7 @@ export function RouteMap({ origin, destination }: Props) {
     <section className="flex flex-col overflow-hidden rounded-xl bg-secondary ring-1 ring-secondary ring-inset">
       <PanelHeader origin={origin} destination={destination} />
       <p className="px-5 pt-4 text-sm text-secondary">
-        {from.name} → {to.name}
+        {from.city} → {to.city}
       </p>
       <div className="flex flex-1 items-center px-2 pb-2">
         <ComposableMap
@@ -100,7 +111,7 @@ export function RouteMap({ origin, destination }: Props) {
           width={WIDTH}
           height={HEIGHT}
           style={{ width: '100%', height: 'auto' }}
-          aria-label={`Mapa de la ruta ${from.name} a ${to.name}`}
+          aria-label={`Mapa de la ruta ${from.city} a ${to.city}`}
         >
           <Geographies geography={GEO_URL}>
             {({ geographies }) =>
