@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -99,8 +100,13 @@ public class SerpApiFlightProvider implements FlightProvider {
         if (response.otherFlights() != null) {
             groups.addAll(response.otherFlights());
         }
+        // best_flights are Google's picks by price AND comfort, so they aren't
+        // necessarily the cheapest: a cheaper one often sits in other_flights. Sort
+        // before cutting to the top N, and drop groups without a price.
         return groups.stream()
+                .filter(g -> g.price() != null)
                 .map(g -> toFlightOffer(g, departDate, returnDate))
+                .sorted(Comparator.comparing(FlightOffer::price))
                 .limit(props.maxResults())
                 .toList();
     }

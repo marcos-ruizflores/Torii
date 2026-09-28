@@ -71,7 +71,8 @@ class SerpApiFlightProviderTest {
 
         assertThat(offers).hasSize(2);
 
-        FlightOffer best = offers.get(0);
+        // Cheapest first, even though Google put Iberia in best_flights.
+        FlightOffer best = offers.get(1);
         assertThat(best.airline()).isEqualTo("Iberia");
         assertThat(best.price()).isEqualByComparingTo("520");
         assertThat(best.stops()).isZero();
@@ -80,7 +81,7 @@ class SerpApiFlightProviderTest {
         assertThat(best.departureTime()).isEqualTo(LocalTime.of(10, 45));
         assertThat(best.stopovers()).isEmpty();
 
-        FlightOffer other = offers.get(1);
+        FlightOffer other = offers.get(0);
         assertThat(other.airline()).isEqualTo("Lufthansa");
         assertThat(other.price()).isEqualByComparingTo("480");
         assertThat(other.stops()).isEqualTo(1); // one stop (one layover)
@@ -88,6 +89,32 @@ class SerpApiFlightProviderTest {
         assertThat(other.stopovers()).containsExactly("FRA");
 
         server.verify();
+    }
+
+    @Test
+    void seQuedaConLasMasBaratasAunqueEstenEnOtherFlights() {
+        // 3 highlighted flights and 4 others: the 2 cheapest are the last "other" ones.
+        String json = """
+                {
+                  "best_flights": [
+                    { "flights": [ {"airline":"Air China"} ], "layovers": [ {"id":"PVG"} ], "price": 635 },
+                    { "flights": [ {"airline":"KLM"} ], "layovers": [ {"id":"AMS"} ], "price": 752 },
+                    { "flights": [ {"airline":"Etihad"} ], "layovers": [ {"id":"AUH"} ], "price": 755 }
+                  ],
+                  "other_flights": [
+                    { "flights": [ {"airline":"Lufthansa"} ], "layovers": [ {"id":"FRA"} ], "price": 790 },
+                    { "flights": [ {"airline":"Turkish"} ], "layovers": [ {"id":"IST"} ], "price": 810 },
+                    { "flights": [ {"airline":"Air China"} ], "layovers": [ {"id":"PVG"} ], "price": 575 },
+                    { "flights": [ {"airline":"Sin precio"} ], "layovers": [] }
+                  ]
+                }
+                """;
+        server.expect(requestTo(containsString("/search"))).andRespond(withSuccess(json, APPLICATION_JSON));
+
+        List<FlightOffer> offers = provider.searchOffers(
+                "BCN", "NRT", LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 14), 1);
+
+        assertThat(offers).extracting(o -> o.price().intValue()).containsExactly(575, 635, 752, 755, 790);
     }
 
     @Test
