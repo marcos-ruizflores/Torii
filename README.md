@@ -316,17 +316,6 @@ below it is low, at or above it is high. The UI always says which of the two the
 verdict is based on, and with less data than that it shows no verdict instead of
 guessing.
 
-### A second look at the cheapest dates
-
-FlightPowers only returns the fares Google Flights highlights ("Mejores opciones"),
-not the ones it files under "Otros vuelos", which are sometimes cheaper (BCN–NRT,
-1–14 Dec 2026: 729 EUR from FlightPowers, 575 EUR on Google). SerpApi does return
-those, but its quota is too small to scan every date. So once the scan is done,
-`BestDatesRefiner` asks SerpApi again for the 3 cheapest date pairs only, merges the
-results without duplicates and re-ranks them. That's 3 calls per search, cached like
-the rest, best effort (on a quota error it pauses for an hour) and off with
-`torii.search.refine.enabled=false` if FlightPowers ever returns every fare.
-
 ### Quotas checked up front
 
 See the next section. Because the cost of a search is known before it runs, no search

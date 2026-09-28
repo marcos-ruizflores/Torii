@@ -52,7 +52,7 @@ public class SlidingWindowEngine {
      * break ties. Without the tie-breaker, the parallel run could return offers with
      * the same price in a different order on every search.
      */
-    public static final Comparator<FlightOffer> BY_PRICE_THEN_STABLE =
+    private static final Comparator<FlightOffer> BY_PRICE_THEN_STABLE =
             Comparator.comparing(FlightOffer::price)
                     .thenComparing(FlightOffer::departDate)
                     .thenComparing(FlightOffer::airline);

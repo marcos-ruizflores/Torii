@@ -12,8 +12,6 @@ import com.torii.provider.flightpowers.FlightPowersFlightProvider;
 import com.torii.provider.serpapi.SerpApiFlightProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.torii.search.BestDatesRefiner;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -109,28 +107,5 @@ public class ProviderConfig {
 
         FailoverFlightProvider failover = new FailoverFlightProvider(providers, clock, FAILOVER_COOLDOWN);
         return new CachingFlightProvider(failover, ttlPolicy, clock, cacheProps.maximumSize());
-    }
-
-    /**
-     * Second look at the cheapest dates of each search with SerpApi, which also
-     * returns the fares FlightPowers leaves out (see BestDatesRefiner). Only useful
-     * when FlightPowers is the main source; with its own cache so repeated searches
-     * don't spend SerpApi quota again.
-     */
-    @Bean
-    public BestDatesRefiner bestDatesRefiner(
-            TripTtlPolicy ttlPolicy, Clock clock, CacheProperties cacheProps,
-            SerpApiProperties serpApiProps, FlightPowersProperties flightPowersProps,
-            @Value("${torii.search.refine.enabled:true}") boolean enabled,
-            @Value("${torii.search.refine.top-dates:3}") int topDates) {
-        boolean flightPowersOn = flightPowersProps.enabled() && !flightPowersProps.apiKey().isBlank();
-        boolean serpApiOn = serpApiProps.enabled() && !serpApiProps.apiKey().isBlank();
-        if (!enabled || !flightPowersOn || !serpApiOn) {
-            return BestDatesRefiner.disabled();
-        }
-        log.info("Refinado de las {} mejores fechas con SerpApi ACTIVADO", topDates);
-        FlightProvider serpApi = new SerpApiFlightProvider(RestClient.builder(), serpApiProps);
-        return new BestDatesRefiner(new CachingFlightProvider(serpApi, ttlPolicy, clock, cacheProps.maximumSize()),
-                topDates, clock);
     }
 }
