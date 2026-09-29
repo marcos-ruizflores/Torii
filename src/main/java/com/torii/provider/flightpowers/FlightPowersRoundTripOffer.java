@@ -24,9 +24,15 @@ public record FlightPowersRoundTripOffer(
         @JsonProperty("departure_flight_airline") String departureAirline,
         @JsonProperty("departure_flight_stops") Integer departureStops,
         @JsonProperty("departure_flight_departure_description") String departureDescription,
+        @JsonProperty("departure_flight_arrival_description") String departureArrivalDescription,
+        @JsonProperty("departure_flight_duration") String departureDuration,
         @JsonProperty("departure_stops_info") List<Object> departureStopsInfo,
 
+        @JsonProperty("return_flight_airline") String returnAirline,
         @JsonProperty("return_flight_departure_description") String returnDepartureDescription,
+        @JsonProperty("return_flight_arrival_description") String returnArrivalDescription,
+        @JsonProperty("return_flight_duration") String returnDuration,
+        @JsonProperty("return_stops_info") List<Object> returnStopsInfo,
 
         @JsonProperty("price_range_in_relation_to_other_periods") String priceLevel,
         @JsonProperty("price_insights_low") Double priceInsightsLow,

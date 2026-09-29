@@ -44,6 +44,18 @@ export interface FlightOffer {
   stopovers: string[] // IATA codes of the stopover airports
   bookingUrl: string
   priceInsight: PriceInsight | null // null when there's nothing to compare against yet
+  // Itinerary detail of each direction; null when the source doesn't give it.
+  outbound: FlightLeg | null
+  inbound: FlightLeg | null
+}
+
+/** One direction of the trip. Times are local to each airport ("2026-12-01T21:50:00"). */
+export interface FlightLeg {
+  airline: string | null
+  departure: string | null
+  arrival: string | null
+  durationMinutes: number | null
+  layovers: { airport: string; minutes: number | null }[]
 }
 
 /**

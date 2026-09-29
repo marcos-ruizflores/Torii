@@ -25,6 +25,9 @@ import java.util.List;
  *       and price, different times or stops). They can be missing ({@code null} or an
  *       empty list) when the source doesn't provide them, e.g. SerpApi doesn't give
  *       the return time without a second call.</li>
+ *   <li>{@code outbound} and {@code inbound} are the itinerary detail of each
+ *       direction (times, duration, layovers). {@code null} when the source doesn't
+ *       give it.</li>
  *   <li>{@code priceInsight} is the low / typical / high verdict for the price, from
  *       the source or computed by Torii (see {@link PriceInsight#source()}). It can
  *       be {@code null} when there's nothing to compare against yet.</li>
@@ -41,8 +44,19 @@ public record FlightOffer(
         LocalTime returnDepartureTime,
         List<String> stopovers,
         String bookingUrl,
-        PriceInsight priceInsight
+        PriceInsight priceInsight,
+        FlightLeg outbound,
+        FlightLeg inbound
 ) {
+    /** Constructor without the itinerary detail, for the sources that don't provide it. */
+    public FlightOffer(String airline, BigDecimal price, String currency, int stops,
+                       LocalDate departDate, LocalDate returnDate, LocalTime departureTime,
+                       LocalTime returnDepartureTime, List<String> stopovers, String bookingUrl,
+                       PriceInsight priceInsight) {
+        this(airline, price, currency, stops, departDate, returnDate, departureTime, returnDepartureTime,
+                stopovers, bookingUrl, priceInsight, null, null);
+    }
+
     /** Constructor without a price verdict, for the sources that don't provide one. */
     public FlightOffer(String airline, BigDecimal price, String currency, int stops,
                        LocalDate departDate, LocalDate returnDate, LocalTime departureTime,
@@ -74,7 +88,7 @@ public record FlightOffer(
     /** Same offer with a verdict attached. */
     public FlightOffer withPriceInsight(PriceInsight insight) {
         return new FlightOffer(airline, price, currency, stops, departDate, returnDate,
-                departureTime, returnDepartureTime, stopovers, bookingUrl, insight);
+                departureTime, returnDepartureTime, stopovers, bookingUrl, insight, outbound, inbound);
     }
 
     /** Length of stay in days (exact difference between return and outbound). */

@@ -1,8 +1,10 @@
-import { AlertCircle, ArrowUpRight } from '@untitledui/icons'
+import { useId, useState } from 'react'
+import { AlertCircle, ArrowUpRight, ChevronDown } from '@untitledui/icons'
 import { Button } from '@/components/base/buttons/button'
 import { cx } from '@/utils/cx'
 import type { FlightOffer, PriceInsight } from '../api/types'
 import { FlapBlank, FlapText } from './board/FlapText'
+import { Itinerary } from './Itinerary'
 import { BOARD_COLS_MD } from './board/grid'
 
 type BoardState = 'idle' | 'loading' | 'error' | 'success'
@@ -131,7 +133,46 @@ function BlankRow({ ticking }: { ticking: boolean }) {
   )
 }
 
-function OfferRow({ offer: o, cheapest, route }: { offer: FlightOffer; cheapest: boolean; route: string }) {
+/** Opens the itinerary under the row; the chevron turns to show which way it goes. */
+function DetailToggle({ open, onToggle, controls, label }: {
+  open: boolean
+  onToggle: () => void
+  controls: string
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      aria-controls={controls}
+      aria-label={label}
+      className="flex size-9 shrink-0 items-center justify-center rounded-lg text-fg-quaternary ring-1 ring-secondary transition-colors duration-150 ring-inset outline-focus-ring hover:bg-primary_hover hover:text-fg-secondary focus-visible:outline-2 focus-visible:outline-offset-2"
+    >
+      <ChevronDown
+        className={cx('size-5 transition-transform duration-200 ease-out motion-reduce:transition-none', open && 'rotate-180')}
+        aria-hidden="true"
+      />
+    </button>
+  )
+}
+
+function OfferRow({ offer: o, cheapest, route, origin, destination }: {
+  offer: FlightOffer
+  cheapest: boolean
+  route: string
+  origin: string
+  destination: string
+}) {
+  const [open, setOpen] = useState(false)
+  const detailId = useId()
+  const toggle = () => setOpen((v) => !v)
+  // A click anywhere on the row opens the detail, except on its own controls.
+  const onRowClick = (e: React.MouseEvent) => {
+    if (!(e.target as HTMLElement).closest('a, button')) toggle()
+  }
+  const toggleLabel = `${open ? 'Ocultar' : 'Ver'} itinerario de ${o.airline}, ${boardDate(o.departDate)} a ${boardDate(o.returnDate)}`
+
   const price = cheapest ? (
     <FlapText text={euros(o.price, o.currency)} tone="signal" className="text-2xl" />
   ) : (
@@ -164,7 +205,7 @@ function OfferRow({ offer: o, cheapest, route }: { offer: FlightOffer; cheapest:
   return (
     <div role="row" className={cx('border-b border-secondary last:border-b-0', cheapest && 'bg-primary')}>
       {/* Board: one fixed column per field. */}
-      <div className={cx('hidden px-5 py-4', COLUMNS)}>
+      <div className={cx('hidden cursor-pointer px-5 py-4', COLUMNS)} onClick={onRowClick}>
         <span role="cell" className="flex flex-col">
           <span className="font-display text-lg font-semibold text-primary uppercase">{boardDate(o.departDate)}</span>
           <span className="text-sm text-tertiary">{shortTime(o.departureTime)}</span>
@@ -186,13 +227,14 @@ function OfferRow({ offer: o, cheapest, route }: { offer: FlightOffer; cheapest:
         <span role="cell" className="text-right">
           {price}
         </span>
-        <span role="cell" className="justify-self-end">
+        <span role="cell" className="flex items-center gap-2 justify-self-end">
           {book}
+          <DetailToggle open={open} onToggle={toggle} controls={detailId} label={toggleLabel} />
         </span>
       </div>
 
       {/* Phones: the same fields on a fixed two-column grid, identical on every row. */}
-      <div className="grid grid-cols-[1fr_auto] items-start gap-x-4 gap-y-3 px-5 py-4 md:hidden">
+      <div className="grid cursor-pointer grid-cols-[1fr_auto] items-start gap-x-4 gap-y-3 px-5 py-4 md:hidden" onClick={onRowClick}>
         <span role="cell" className="flex flex-col">
           <span className="font-display text-lg font-semibold text-primary uppercase">
             {boardDate(o.departDate)} → {boardDate(o.returnDate)}
@@ -214,8 +256,27 @@ function OfferRow({ offer: o, cheapest, route }: { offer: FlightOffer; cheapest:
         </span>
         <span role="cell" className="flex flex-col items-end gap-2">
           {price}
-          {book}
+          <span className="flex items-center gap-2">
+            {book}
+            <DetailToggle open={open} onToggle={toggle} controls={detailId} label={toggleLabel} />
+          </span>
         </span>
+      </div>
+
+      {/* Itinerary: grows open from the row (grid rows 0fr -> 1fr), inert while shut. */}
+      <div
+        id={detailId}
+        inert={!open}
+        className={cx(
+          'grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none',
+          open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+        )}
+      >
+        <div className="overflow-hidden">
+          <div className="mx-5 mb-5 rounded-lg bg-secondary px-5 py-5 ring-1 ring-secondary ring-inset">
+            <Itinerary offer={o} origin={origin} destination={destination} />
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -262,7 +323,14 @@ export function ResultsBoard({ state, offers = [], origin, destination, errorMes
             <ColumnHeaders />
             <div role="rowgroup">
               {offers.map((o, i) => (
-                <OfferRow key={`${o.airline}-${o.departDate}-${o.returnDate}-${i}`} offer={o} cheapest={i === 0} route={route} />
+                <OfferRow
+                  key={`${o.airline}-${o.departDate}-${o.returnDate}-${i}`}
+                  offer={o}
+                  cheapest={i === 0}
+                  route={route}
+                  origin={origin ?? ''}
+                  destination={destination ?? ''}
+                />
               ))}
             </div>
           </>

@@ -1,6 +1,7 @@
 package com.torii.provider.flightpowers;
 
 import com.torii.config.FlightPowersProperties;
+import com.torii.model.FlightLeg;
 import com.torii.model.FlightOffer;
 import com.torii.model.PriceInsight;
 import com.torii.provider.FlightProvider;
@@ -17,7 +18,9 @@ import org.springframework.web.client.RestClientException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.MonthDay;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -62,6 +65,10 @@ public class FlightPowersFlightProvider implements FlightProvider {
 
     /** "5:05 PM" out of "5:05 PM on Tue, Oct 6". */
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH);
+    private static final DateTimeFormatter MONTH_DAY_FORMAT = DateTimeFormatter.ofPattern("MMM d", Locale.ENGLISH);
+    private static final Pattern DURATION_DAYS = Pattern.compile("(\\d+)\\s*day");
+    private static final Pattern DURATION_HOURS = Pattern.compile("(\\d+)\\s*hr");
+    private static final Pattern DURATION_MINUTES = Pattern.compile("(\\d+)\\s*min");
 
     /** An IATA code inside parentheses, e.g. "Shenzhen (SZX)". */
     private static final Pattern IATA_IN_PARENS = Pattern.compile("\\(([A-Z]{3})\\)");
@@ -161,7 +168,77 @@ public class FlightPowersFlightProvider implements FlightProvider {
         return new FlightOffer(airline, BigDecimal.valueOf(r.totalPrice()), props.currency(), stops,
                 departDate, returnDate,
                 parseTime(r.departureDescription()), parseTime(r.returnDepartureDescription()),
-                stopovers, bookingUrl, toPriceInsight(r));
+                stopovers, bookingUrl, toPriceInsight(r),
+                leg(airline, r.departureDescription(), r.departureArrivalDescription(), r.departureDuration(),
+                        r.departureStopsInfo(), departDate),
+                leg(r.returnAirline() != null && !r.returnAirline().isBlank() ? r.returnAirline().strip() : airline,
+                        r.returnDepartureDescription(), r.returnArrivalDescription(), r.returnDuration(),
+                        r.returnStopsInfo(), returnDate));
+    }
+
+    /** One direction of the trip for the itinerary detail, or null if there's nothing to show. */
+    private static FlightLeg leg(String airline, String departure, String arrival, String duration,
+                                 List<Object> stopsInfo, LocalDate travelDate) {
+        LocalDateTime leaves = parseDateTime(departure, travelDate);
+        LocalDateTime lands = parseDateTime(arrival, travelDate);
+        if (leaves == null && lands == null) {
+            return null;
+        }
+        List<FlightLeg.Layover> layovers = stopsInfo == null ? List.of() : stopsInfo.stream()
+                .map(item -> new FlightLeg.Layover(findIata(item), layoverMinutes(item)))
+                .filter(l -> l.airport() != null)
+                .toList();
+        return new FlightLeg(airline, leaves, lands, parseDuration(duration), layovers);
+    }
+
+    /**
+     * "11:40 AM on Wed, Dec 2" -> 2026-12-02T11:40. The text has no year, so it takes
+     * the one that puts the date closest to the day of travel (a December trip can
+     * land in January).
+     */
+    static LocalDateTime parseDateTime(String description, LocalDate travelDate) {
+        LocalTime time = parseTime(description);
+        if (time == null) {
+            return null;
+        }
+        String normalized = description.replace('\u202f', ' ').replace('\u00a0', ' ').strip();
+        int comma = normalized.lastIndexOf(", ");
+        if (comma < 0) {
+            return null;
+        }
+        try {
+            MonthDay monthDay = MonthDay.parse(normalized.substring(comma + 2).strip(), MONTH_DAY_FORMAT);
+            LocalDate date = monthDay.atYear(travelDate.getYear());
+            if (date.isBefore(travelDate.minusMonths(6))) date = date.plusYears(1);
+            else if (date.isAfter(travelDate.plusMonths(6))) date = date.minusYears(1);
+            return date.atTime(time);
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    /** "17 hr 40 min" -> 1060. Null if there's no number in it. */
+    static Integer parseDuration(String text) {
+        if (text == null) {
+            return null;
+        }
+        Matcher days = DURATION_DAYS.matcher(text);
+        Matcher hours = DURATION_HOURS.matcher(text);
+        Matcher minutes = DURATION_MINUTES.matcher(text);
+        int total = 0;
+        boolean any = false;
+        if (days.find()) { total += Integer.parseInt(days.group(1)) * 1440; any = true; }
+        if (hours.find()) { total += Integer.parseInt(hours.group(1)) * 60; any = true; }
+        if (minutes.find()) { total += Integer.parseInt(minutes.group(1)); any = true; }
+        return any ? total : null;
+    }
+
+    /** {"stop_airport": "AUH", "stop_duration_seconds": 6600} -> 110. */
+    private static Integer layoverMinutes(Object item) {
+        if (item instanceof Map<?, ?> map && map.get("stop_duration_seconds") instanceof Number n) {
+            return (int) Math.round(n.doubleValue() / 60);
+        }
+        return null;
     }
 
     private static PriceInsight toPriceInsight(FlightPowersRoundTripOffer r) {

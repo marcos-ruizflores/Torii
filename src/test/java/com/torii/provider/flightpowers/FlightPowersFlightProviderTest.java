@@ -1,6 +1,7 @@
 package com.torii.provider.flightpowers;
 
 import com.torii.config.FlightPowersProperties;
+import com.torii.model.FlightLeg;
 import com.torii.model.FlightOffer;
 import com.torii.provider.FlightProviderException;
 import com.torii.provider.ProviderQuotaExceededException;
@@ -13,6 +14,7 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -181,5 +183,57 @@ class FlightPowersFlightProviderTest {
         assertThat(FlightPowersFlightProvider.normalizeLevel("cheaper than usual")).isEqualTo("low");
         assertThat(FlightPowersFlightProvider.normalizeLevel("")).isNull();
         assertThat(FlightPowersFlightProvider.normalizeLevel("unknown")).isNull();
+    }
+
+    /** A real round-trip result (BCN-NRT, Dec 1-13 2026) as FlightPowers returns it. */
+    private static final String REAL_ITINERARY = """
+            [{
+              "price_range_in_relation_to_other_periods": "typical",
+              "price_insights_low": 700, "price_insights_high": 1100,
+              "total_price_as_number": 762, "total_stops": 2,
+              "buy_link": "https://www.google.com/travel/flights?tfs=X",
+              "departure_flight_departure_description": "9:50 PM on Tue, Dec 1",
+              "departure_flight_arrival_description": "11:40 AM on Thu, Dec 3",
+              "departure_flight_airline": "Etihad",
+              "departure_flight_stops": 1,
+              "departure_flight_duration": "29 hr 50 min",
+              "departure_stops_info": [ {"stop_airport": "AUH", "stop_duration_seconds": 50400} ],
+              "return_flight_departure_description": "5:20 PM on Sun, Dec 13",
+              "return_flight_arrival_description": "7:05 AM on Mon, Dec 14",
+              "return_flight_airline": "Etihad",
+              "return_flight_stops": 1,
+              "return_flight_duration": "21 hr 45 min",
+              "return_stops_info": [ {"stop_airport": "AUH", "stop_duration_seconds": 6900} ]
+            }]
+            """;
+
+    @Test
+    void mapeaElItinerarioDeIdaYVuelta() {
+        server.expect(requestTo(URL)).andRespond(withSuccess(REAL_ITINERARY, APPLICATION_JSON));
+
+        FlightOffer offer = provider.searchOffers(
+                "BCN", "NRT", LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 13), 1).get(0);
+
+        var out = offer.outbound();
+        assertThat(out.airline()).isEqualTo("Etihad");
+        assertThat(out.departure()).isEqualTo(LocalDateTime.of(2026, 12, 1, 21, 50));
+        assertThat(out.arrival()).isEqualTo(LocalDateTime.of(2026, 12, 3, 11, 40)); // lands two days later
+        assertThat(out.durationMinutes()).isEqualTo(29 * 60 + 50);
+        assertThat(out.layovers()).containsExactly(new FlightLeg.Layover("AUH", 840)); // 14 h in Abu Dhabi
+
+        var back = offer.inbound();
+        assertThat(back.departure()).isEqualTo(LocalDateTime.of(2026, 12, 13, 17, 20));
+        assertThat(back.arrival()).isEqualTo(LocalDateTime.of(2026, 12, 14, 7, 5));
+        assertThat(back.layovers()).containsExactly(new FlightLeg.Layover("AUH", 115));
+    }
+
+    @Test
+    void lasFechasSinAnoCaenEnElAnoDelViaje() {
+        // A late December trip that lands in January.
+        assertThat(FlightPowersFlightProvider.parseDateTime("6:05 AM on Fri, Jan 1", LocalDate.of(2026, 12, 31)))
+                .isEqualTo(LocalDateTime.of(2027, 1, 1, 6, 5));
+        assertThat(FlightPowersFlightProvider.parseDuration("1 day 2 hr 5 min")).isEqualTo(1565);
+        assertThat(FlightPowersFlightProvider.parseDuration("45 min")).isEqualTo(45);
+        assertThat(FlightPowersFlightProvider.parseDuration(null)).isNull();
     }
 }
