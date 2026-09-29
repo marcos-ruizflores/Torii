@@ -97,7 +97,9 @@ class FlightPowersFlightProviderTest {
                 .andExpect(jsonPath("$.max_departure_stops").value(2))
                 .andExpect(jsonPath("$.max_return_stops").value(2))
                 .andExpect(jsonPath("$.currency").value("eur"))
-                .andExpect(jsonPath("$.sort_type").value("Price"))
+                .andExpect(jsonPath("$.sort_type").doesNotExist()) // price sort drops fares and the verdict
+                .andExpect(jsonPath("$.limit").value(25))
+                .andExpect(jsonPath("$.max_price").doesNotExist())
                 .andRespond(withSuccess(SAMPLE_JSON, APPLICATION_JSON));
 
         List<FlightOffer> offers = provider.searchOffers(

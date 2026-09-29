@@ -56,6 +56,8 @@ public class FlightPowersFlightProvider implements FlightProvider {
     private static final Set<String> UNKNOWN_LEVELS = ConcurrentHashMap.newKeySet();
 
     private static final String ROUND_TRIP_PATH = "/api/google_flights/roundtrip/v1";
+    /** Largest page the round-trip endpoint returns (default 10). We keep the cheapest maxResults. */
+    static final int REQUEST_LIMIT = 25;
     private static final String FALLBACK_BOOKING_URL = "https://www.google.com/travel/flights";
 
     /** "5:05 PM" out of "5:05 PM on Tue, Oct 6". */
@@ -87,9 +89,12 @@ public class FlightPowersFlightProvider implements FlightProvider {
         body.put("max_departure_stops", maxStops);
         body.put("max_return_stops", maxStops);
         body.put("currency", props.currency().toLowerCase(Locale.ROOT));
-        body.put("sort_type", "Price");
+        // No sort_type on purpose: Google serves a shorter page for the price sort and
+        // leaves the price insights out of it (confirmed with FlightPowers). The default
+        // sort plus the maximum page, sorted by price here, gives more fares and keeps
+        // the verdict. Same reason max_price is never sent.
         body.put("passengers", List.of(1));
-        body.put("limit", props.maxResults());
+        body.put("limit", REQUEST_LIMIT);
 
         try {
             ResponseEntity<List<FlightPowersRoundTripOffer>> response = restClient.post()
@@ -114,8 +119,8 @@ public class FlightPowersFlightProvider implements FlightProvider {
                         origin, destination, departDate, returnDate);
             }
 
-            // The round-trip endpoint sends the verdict fields empty ("" and null); only
-            // one-way searches get them filled. Kept at debug so it doesn't flood the log.
+            // Google sometimes leaves the price insights out (always with the price sort,
+            // which is why it isn't used). Kept at debug so it doesn't flood the log.
             if (!results.isEmpty() && results.stream().allMatch(r -> r == null || normalizeLevel(r.priceLevel()) == null)) {
                 log.debug("FlightPowers: sin veredicto de precio para {}->{} {}/{}",
                         origin, destination, departDate, returnDate);
@@ -137,8 +142,7 @@ public class FlightPowersFlightProvider implements FlightProvider {
                 .filter(Objects::nonNull)
                 .filter(r -> r.totalPrice() != null)
                 .map(r -> toFlightOffer(r, departDate, returnDate))
-                // sort_type=Price should already do this, but the top N has to be the
-                // cheapest no matter what the API decides.
+                // Results come in Google's default order, so the cheapest are picked here.
                 .sorted(Comparator.comparing(FlightOffer::price))
                 .limit(props.maxResults())
                 .toList();

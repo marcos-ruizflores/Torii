@@ -304,10 +304,11 @@ answer:
   no keys configured. Its offers are excluded from the price history so they never
   pollute real data.
 
-FlightPowers goes first because it's the cheapest source per call. Its responses have
-fields for Google's price insight (`low` / `typical` / `high` plus the usual price
-range), which feed the "Veredicto" column, but in practice only one-way searches fill
-them: round-trip responses come back with them empty. So Torii works out its own
+FlightPowers goes first because it's the cheapest source per call. Its responses carry
+Google's price insight (`low` / `typical` / `high` plus the usual price range), which
+feeds the "Veredicto" column. Torii asks for Google's default order with the largest
+page (25) and sorts by price itself, because Google's price-sorted page is shorter and
+leaves the insight out. When an offer still comes without one, Torii works out its own
 (`PriceVerdictService`): it compares each offer with the best daily prices it has
 stored for the route over the last 90 days (at least 5 days, today excluded), or, while
 a route has less history than that, with the cheapest price of each date scanned in
